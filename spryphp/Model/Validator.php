@@ -3,9 +3,10 @@
  * This file is to handle The Validator
  */
 
-namespace SpryPhp\Provider;
+namespace SpryPhp\Model;
 
 use stdClass;
+use SpryPhp\Provider\Alerts;
 
 /**
  * Class for Validator
