@@ -60,12 +60,8 @@ class Session
      */
     public static function set(string $sessionType, string $sessionId)
     {
-        if (!defined('APP_AUTH_KEY')) {
-            error_log('SpryPHP: APP_AUTH_KEY is not defined.');
-        }
-
         self::$type = $sessionType;
-        self::$id   = sha1(constant('APP_AUTH_KEY').$sessionId);
+        self::$id   = self::makeId($sessionId);
         self::updateCookie(self::$id);
     }
 
@@ -149,6 +145,22 @@ class Session
         }
 
         return defined('APP_SESSION_TTL') && constant('APP_SESSION_TTL') ? intval(constant('APP_SESSION_TTL')) : 0;
+    }
+
+    /**
+     * Makes an Authorized Session ID from user value.
+     *
+     * @param string $sessionId - User provided unique id.
+     *
+     * @return string
+     */
+    public static function makeId(string $sessionId): string
+    {
+        if (!defined('APP_AUTH_KEY')) {
+            error_log('SpryPHP: APP_AUTH_KEY is not defined.');
+        }
+
+        return sha1(constant('APP_AUTH_KEY').$sessionId);
     }
 
     /**
