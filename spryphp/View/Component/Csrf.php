@@ -3,7 +3,7 @@
  * CSRF Component
  */
 
-namespace SpryPhp\Component;
+namespace SpryPhp\View\Component;
 
 use SpryPhp\Provider\Session;
 
@@ -18,7 +18,7 @@ class Csrf
     public function __construct()
     {
         ?>
-        <input type="hidden" name="csrf" value="<?= Session::csrf(); ?>">
+        <input type="hidden" name="csrf" value="<?= Session::getCsrf(); ?>">
         <?php
     }
 }

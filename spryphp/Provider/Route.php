@@ -63,6 +63,19 @@ class Route
     }
 
     /**
+     * Change the Route.
+     *
+     * @param string $path
+     *
+     * @return void
+     */
+    public static function go($path)
+    {
+        header('Location: '.$path);
+        exit;
+    }
+
+    /**
      * Run the Request
      *
      * @param string   $path     - Request URI to match.

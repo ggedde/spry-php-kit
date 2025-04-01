@@ -193,6 +193,12 @@ class Request
             }
         }
 
+        // Check and Validate CSRF Token
+        $csrf = Session::getCsrf();
+        if ($csrf && ((Request::$method !== 'GET' && (empty($_REQUEST['csrf']) || $_REQUEST['csrf'] !== $csrf)) || (Request::$method === 'GET' && !empty($_REQUEST['csrf']) && $_REQUEST['csrf'] !== $csrf))) {
+            Functions::abort('Invalid CSRF Token.');
+        }
+
         if (self::$method === 'GET' && !empty($_GET)) {
             foreach ($_GET as $key => $value) {
                 $key = Functions::convertToCamelCase($key);

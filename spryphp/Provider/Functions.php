@@ -7,8 +7,8 @@ namespace SpryPhp\Provider;
 
 use SpryPhp\Provider\Alerts;
 use SpryPhp\Provider\Request;
-use SpryPhp\Provider\Router;
-use SpryPhp\Provider\Validator;
+use SpryPhp\Provider\Route;
+use SpryPhp\Model\Validator;
 
 /**
  * Function Class
@@ -79,7 +79,7 @@ class Functions
             if (!defined('APP_URI_LOGIN') || !defined('APP_URI_LOGOUT')) {
                 error_log('SpryPHP: No APP_URI_LOGIN or APP_URI_LOGOUT defined.');
             } elseif (!in_array(Request::$path, [constant('APP_URI_LOGIN'), constant('APP_URI_LOGOUT')], true)) {
-                Router::go(constant('APP_URI_LOGIN'));
+                Route::go(constant('APP_URI_LOGIN'));
             }
         }
     }
@@ -143,6 +143,16 @@ class Functions
         }
 
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $data));
+    }
+
+    /**
+     * Create a New UUID
+     *
+     * @return string
+     */
+    public static function newUuid(): string
+    {
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(dechex(intval(number_format(floatval(time().explode(' ', microtime())[0]), 6, '', ''))).bin2hex(random_bytes(9)), 4));
     }
 
     /**

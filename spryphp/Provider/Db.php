@@ -498,16 +498,6 @@ class Db
     }
 
     /**
-     * Create a New UUID
-     *
-     * @return string
-     */
-    public static function newUuid(): string
-    {
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(dechex(intval(number_format(floatval(time().explode(' ', microtime())[0]), 6, '', ''))).bin2hex(random_bytes(9)), 4));
-    }
-
-    /**
      * Check and Update Tables
      *
      * @return void

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 /**
- * This file is to handle The Job Class
+ * This file is to handle The DB Item
  */
 
 namespace SpryPhp\Model;
@@ -9,7 +9,7 @@ use SpryPhp\Provider\Db;
 use SpryPhp\Provider\Functions;
 
 /**
- * Job Instance
+ * DB Item Instance
  */
 class DbItem
 {
@@ -28,7 +28,7 @@ class DbItem
     public string $createdAt = '';
 
     /**
-     * Created At Timestamp
+     * Created At Timestamp Formatted
      *
      * @var string $createdAtFormatted
      */
@@ -42,25 +42,18 @@ class DbItem
     public string $updatedAt = '';
 
     /**
-     * Updated At Timestamp
+     * Updated At Timestamp Formatted
      *
      * @var string $updatedAt
      */
     public string $updatedAtFormatted = '';
 
     /**
-     * Database Table
+     * The DB Table
      *
      * @var string $dbTable
      */
     protected string $dbTable = '';
-
-    /**
-     * The DB Schema
-     *
-     * @var array $schema
-     */
-    protected array $dbSchema = [];
 
     /**
      * Construct the Obj
@@ -78,7 +71,7 @@ class DbItem
         }
 
         if (empty($this->id)) {
-            $this->id = Db::newUuid();
+            $this->id = Functions::newUuid();
         }
 
         foreach (array_keys((array) $obj) as $key) {
@@ -112,28 +105,6 @@ class DbItem
      */
     public function columns(): array
     {
-        // $ref = new \ReflectionClass(static::class);
-        // $props = $ref->getProperties();
-        // foreach ($props as $prop) {
-        //     $item = (object) [
-        //         'name' => $prop->getName(),
-        //         'type' => $prop->getType()->getName(),
-        //     ];
-        //     foreach ($prop->getAttributes() as $attr) {
-        //         if ($attr->getName() === 'App\ORM') {
-        //             $item->orm = $attr->newInstance();
-        //             if (is_null($item->orm->type) && !empty($type)) {
-        //                 $item->orm->type = !empty($type) ? $type : 'string';
-        //             }
-        //         }
-        //         if ($attr->getName() === 'App\Validate') {
-        //             $item->validate = $attr->newInstance();
-        //         }
-        //     }
-        //     echo '<pre>';print_r( $item );echo '</pre>'; // phpcs:ignore
-        // }
-        // dd($item);
-
         $columns = [];
         $result = Db::query('SHOW COLUMNS FROM '.$this->dbTable);
         if ($result) {
