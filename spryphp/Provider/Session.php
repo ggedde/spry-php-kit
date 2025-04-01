@@ -154,7 +154,7 @@ class Session
      *
      * @return string
      */
-    public static function makeId(string $sessionId): string
+    public static function makeIdFrom(string $sessionId): string
     {
         if (!defined('APP_AUTH_KEY')) {
             error_log('SpryPHP: APP_AUTH_KEY is not defined.');
