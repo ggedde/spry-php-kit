@@ -47,7 +47,7 @@ class Session
             Functions::abort('Your Session has Expired');
         }
 
-        return $_COOKIE[constant('APP_SESSION_COOKIE_NAME')] ?: null;
+        return isset($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) && !empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) ? $_COOKIE[constant('APP_SESSION_COOKIE_NAME')] : null;
     }
 
     /**
@@ -61,7 +61,7 @@ class Session
     public static function set(string $sessionType, string $sessionId)
     {
         self::$type = $sessionType;
-        self::$id   = self::makeId($sessionId);
+        self::$id   = self::makeIdFrom($sessionId);
         self::updateCookie(self::$id);
     }
 
