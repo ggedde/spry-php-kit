@@ -8,7 +8,6 @@ namespace SpryPhp\Provider;
 use SpryPhp\Provider\Alerts;
 use SpryPhp\Provider\Request;
 use SpryPhp\Provider\Route;
-use SpryPhp\Model\Validator;
 
 /**
  * Function Class
@@ -19,12 +18,13 @@ class Functions
 
     /**
      * Basic Dump function
+     * Uses: APP_DEBUG, APP_PATH_ROOT
      *
      * @param mixed ...$data
      *
      * @return void
      */
-    public static function d(...$data): void // phpcs:ignore
+    public static function d(...$data): void
     {
         if (!empty($data) && is_array($data) && count($data) === 1) {
             $data = $data[0];
@@ -54,25 +54,81 @@ class Functions
 
     /**
      * Basic Die and Dump function
+     * Uses: APP_DEBUG, APP_PATH_ROOT
      *
      * @param mixed ...$data
      *
      * @return void
      */
-    public static function dd(...$data): void // phpcs:ignore
+    public static function dd(...$data): void
     {
         self::d(...$data);
         exit;
     }
 
     /**
+     * Initiate the Error Reporting based on constant "APP_DEBUG"
+     * Uses: APP_DEBUG
+     *
+     * @return void
+     */
+    public static function initiateDebug(): void
+    {
+        if (defined('APP_DEBUG') && !empty(constant('APP_DEBUG'))) {
+            ini_set('display_errors', '1');
+            ini_set('display_startup_errors', '1');
+            error_reporting(E_ALL);
+        }
+    }
+
+    /**
+     * Verify that the Host is correct and if not, then redirect to correct Host.
+     * Uses: APP_HOST, APP_HTTPS
+     *
+     * @return void
+     */
+    public static function forceHost(): void
+    {
+       // Check Host and Protocol
+        $isWrongHost = defined('APP_HOST') && !empty(constant('APP_HOST')) && !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== constant('APP_HOST');
+        $isWrongProtocol = defined('APP_HTTPS') && !empty(constant('APP_HTTPS')) && !((!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') || intval($_SERVER['SERVER_PORT']) === 443 || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
+        if ($isWrongHost || $isWrongProtocol) {
+            header('Location: http'.(defined('APP_HTTPS') && !empty(constant('APP_HTTPS')) ? 's' : '').'://'.(defined('APP_HOST') && !empty(constant('APP_HOST')) ? constant('APP_HOST') : $_SERVER['HTTP_HOST']), true, 302);
+            exit;
+        }
+    }
+
+    /**
+     * Load Env File
+     *
+     * @param string $envFile - Absolute path to file.
+     *
+     * @return void
+     */
+    public static function loadEnvFile(string $envFile): void
+    {
+        // Check if file exists and if not, then log an error.
+        if (!file_exists($envFile)) {
+            error_log('SpryPHP: Missing ENV File ('.$envFile.')');
+
+            return;
+        }
+
+        // Load Env File into env vars.
+        foreach (parse_ini_file($envFile) as $envVarKey => $envVarValue) {
+            putenv($envVarKey.'='.$envVarValue);
+        }
+    }
+
+    /**
      * Logout of Session and abort current action with a Message.
+     * Uses: APP_URI_LOGIN, APP_URI_LOGOUT
      *
      * @param string $error
      *
      * @return void
      */
-    public static function abort($error): void // phpcs:ignore
+    public static function abort($error): void
     {
         if ($error) {
             Alerts::addAlert('error', $error);
@@ -91,21 +147,9 @@ class Functions
      *
      * @return string
      */
-    public static function esc($value): string // phpcs:ignore
+    public static function esc($value): string
     {
         return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
-    }
-
-    /**
-     * Use the Validator to Validate params
-     *
-     * @param object|null $params If null then it will try and ge the Params from Request::$params
-     *
-     * @return Validator
-     */
-    function validate(?object $params = null): Validator // phpcs:ignore
-    {
-        return new Validator(!is_null($params) ? $params : Request::$params);
     }
 
     /**
@@ -146,7 +190,7 @@ class Functions
     }
 
     /**
-     * Create a New UUID
+     * Create a New Ordered UUID that is UUIDv7 compatible
      *
      * @return string
      */
@@ -160,7 +204,7 @@ class Functions
      *
      * @return array
      */
-    public static function getStates() // phpcs:ignore
+    public static function getStates()
     {
         return array(
             'AL' => 'Alabama',
