@@ -29,7 +29,7 @@ class Functions
      */
     public static function displayError(mixed $errors, string $trace = ''): void
     {
-        echo '<pre>';
+        echo '<div style="padding: .5em;"><div style="padding: .8em 1.6em; background-color: light-dark(#eee, #333); border: 1px solid #888; border-radius: .5em; line-height: 1.4; overflow: auto;"><pre style="white-space: pre-line;">';
         if ($errors) {
             if (defined('APP_PATH_ROOT')) {
                 print_r(json_decode(str_replace(constant('APP_PATH_ROOT'), '', json_encode($errors))));
@@ -55,7 +55,7 @@ class Functions
             }
             echo '</span>';
         }
-        echo '</pre>';
+        echo '</pre></div></div>';
     }
 
     /**
@@ -109,7 +109,7 @@ class Functions
     public static function formatExceptions(): void
     {
         set_exception_handler(function (\Throwable $exception) {
-            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), 'in '.$exception->getFile().':'.$exception->getLine()."\n".$exception->getTraceAsString());
+            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), 'in '.$exception->getFile().':'.$exception->getLine()."\n\n".$exception->getTraceAsString());
         });
     }
 
