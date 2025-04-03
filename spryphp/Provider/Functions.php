@@ -5,6 +5,7 @@
 
 namespace SpryPhp\Provider;
 
+use Exception;
 use SpryPhp\Provider\Alerts;
 use SpryPhp\Provider\Request;
 use SpryPhp\Provider\Route;
@@ -18,14 +19,24 @@ class Functions
 
     /**
      * Basic Dump function
-     * Uses: APP_DEBUG, APP_PATH_ROOT
      *
      * @param mixed ...$data
+     *
+     * @uses APP_DEBUG
+     * @uses APP_PATH_ROOT
+     *
+     * @throws Exception
      *
      * @return void
      */
     public static function d(...$data): void
     {
+        if (!defined('APP_DEBUG')) {
+            throw new Exception("SpryPHP: APP_DEBUG is not defined.", 1);
+        }
+        if (!defined('APP_PATH_ROOT')) {
+            throw new Exception("SpryPHP: APP_PATH_ROOT is not defined.", 1);
+        }
         if (!empty($data) && is_array($data) && count($data) === 1) {
             $data = $data[0];
         }
@@ -34,7 +45,7 @@ class Functions
             print_r($data);
             echo "\n";
         }
-        if (defined('APP_DEBUG') && !empty(constant('APP_DEBUG'))) {
+        if (!empty(constant('APP_DEBUG'))) {
             echo '<span style="color:#975;">';
             debug_print_backtrace(0);
             echo '</span>';
@@ -43,20 +54,19 @@ class Functions
         ob_end_clean();
 
         echo '<pre>';
-        if (!defined('APP_PATH_ROOT')) {
-            error_log('SpryPHP: APP_PATH_ROOT is not defined.');
-            echo $contents;
-        } else {
-            echo str_replace(dirname(constant('APP_PATH_ROOT')), '', str_replace(constant('APP_PATH_ROOT'), '', $contents));
-        }
+        echo str_replace(dirname(constant('APP_PATH_ROOT')), '', str_replace(constant('APP_PATH_ROOT'), '', $contents));
         echo '</pre>';
     }
 
     /**
      * Basic Die and Dump function
-     * Uses: APP_DEBUG, APP_PATH_ROOT
      *
      * @param mixed ...$data
+     *
+     * @uses APP_DEBUG
+     * @uses APP_PATH_ROOT
+     *
+     * @throws Exception
      *
      * @return void
      */
@@ -68,13 +78,20 @@ class Functions
 
     /**
      * Initiate the Error Reporting based on constant "APP_DEBUG"
-     * Uses: APP_DEBUG
+     *
+     * @uses APP_DEBUG
+     *
+     * @throws Exception
      *
      * @return void
      */
     public static function initiateDebug(): void
     {
-        if (defined('APP_DEBUG') && !empty(constant('APP_DEBUG'))) {
+        if (!defined('APP_DEBUG')) {
+            throw new Exception("SpryPHP: APP_DEBUG is not defined.", 1);
+        }
+
+        if (!empty(constant('APP_DEBUG'))) {
             ini_set('display_errors', '1');
             ini_set('display_startup_errors', '1');
             error_reporting(E_ALL);
@@ -83,7 +100,9 @@ class Functions
 
     /**
      * Verify that the Host is correct and if not, then redirect to correct Host.
-     * Uses: APP_HOST, APP_HTTPS
+     *
+     * @uses APP_HOST
+     * @uses APP_HTTPS
      *
      * @return void
      */
@@ -103,15 +122,15 @@ class Functions
      *
      * @param string $envFile - Absolute path to file.
      *
+     * @throws Exception
+     *
      * @return void
      */
     public static function loadEnvFile(string $envFile): void
     {
         // Check if file exists and if not, then log an error.
         if (!file_exists($envFile)) {
-            error_log('SpryPHP: Missing ENV File ('.$envFile.')');
-
-            return;
+            throw new Exception("SpryPHP: Missing ENV File ('.$envFile.')", 1);
         }
 
         // Load Env File into env vars.
@@ -122,9 +141,13 @@ class Functions
 
     /**
      * Logout of Session and abort current action with a Message.
-     * Uses: APP_URI_LOGIN, APP_URI_LOGOUT
      *
      * @param string $error
+     *
+     * @uses APP_URI_LOGIN
+     * @uses APP_URI_LOGOUT
+     *
+     * @throws Exception
      *
      * @return void
      */
@@ -132,9 +155,15 @@ class Functions
     {
         if ($error) {
             Alerts::addAlert('error', $error);
-            if (!defined('APP_URI_LOGIN') || !defined('APP_URI_LOGOUT')) {
-                error_log('SpryPHP: No APP_URI_LOGIN or APP_URI_LOGOUT defined.');
-            } elseif (!in_array(Request::$path, [constant('APP_URI_LOGIN'), constant('APP_URI_LOGOUT')], true)) {
+            if (!defined('APP_URI_LOGIN')) {
+                throw new Exception("SpryPHP: APP_URI_LOGIN is not defined", 1);
+            }
+
+            if (!defined('APP_URI_LOGOUT')) {
+                throw new Exception("SpryPHP: APP_URI_LOGOUT is not defined", 1);
+            }
+
+            if (!in_array(Request::$path, [constant('APP_URI_LOGIN'), constant('APP_URI_LOGOUT')], true)) {
                 Route::go(constant('APP_URI_LOGIN'));
             }
         }

@@ -5,7 +5,6 @@
 
 namespace SpryPhp\Provider;
 
-use stdClass;
 use SpryPhp\Provider\Functions;
 
 /**
@@ -112,7 +111,7 @@ class Request
     public static function getData()
     {
         self::$pathFull = $_SERVER['REQUEST_URI'];
-        self::$filters = new stdClass();
+        self::$filters = (object) [];
 
         $request = parse_url(self::$pathFull);
 

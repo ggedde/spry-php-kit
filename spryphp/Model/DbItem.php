@@ -5,6 +5,7 @@
 
 namespace SpryPhp\Model;
 
+use Exception;
 use SpryPhp\Provider\Db;
 use SpryPhp\Provider\Functions;
 
@@ -59,6 +60,8 @@ class DbItem
      * Construct the Obj
      *
      * @param object|string $obj - Object of Obj
+     *
+     * @throws Exception
      */
     public function __construct(object|string $obj)
     {
@@ -66,7 +69,7 @@ class DbItem
             $objId = $obj;
             $obj = Db::get($this->dbTable, ['*'], ['id' => $objId]);
             if (empty($obj)) {
-                Functions::abort('Database Error: Cannot find Item ('.$objId.') in '.ucwords($this->dbTable));
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in %s', $objId, ucwords($this->dbTable)), 1);
             }
         }
 

@@ -5,8 +5,8 @@
 
 namespace SpryPhp\Provider;
 
+use Exception;
 use SpryPhp\Model\Alert;
-use SpryPhp\Provider\Functions;
 
 /**
  * Class for managing and rendering Alerts
@@ -75,7 +75,7 @@ class Alerts
     public static function addAlert(string $type, string $message): void
     {
         if (headers_sent()) {
-            Functions::d('Headers Already Sent Alert: '.$message);
+            throw new Exception(sprintf('SpryPHP: Headers Already Sent Alert: %s', $message), 1);
         }
 
         $hasAlert = false;
@@ -97,13 +97,18 @@ class Alerts
      * Store Alerts
      * Add Alerts to Session
      *
+     * @throws Exception
+     *
      * @return void
      */
     private static function storeAlerts(): void
     {
+        if (!defined('APP_URI')) {
+            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
+        }
         if (!headers_sent()) {
             $cookieValue = base64_encode(json_encode(self::$alerts));
-            setcookie(self::$cookieName, $cookieValue, time() + 3600, defined('APP_URI') ? constant('APP_URI') : '/', $_SERVER['HTTP_HOST'], true, true);
+            setcookie(self::$cookieName, $cookieValue, time() + 3600, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, true);
             $_COOKIE[self::$cookieName] = $cookieValue;
         }
     }
@@ -112,12 +117,17 @@ class Alerts
      * Dump Alerts
      * Remove Alerts from Session So they don't show up again.
      *
+     * @throws Exception
+     *
      * @return void
      */
     private static function dumpAlerts(): void
     {
+        if (!defined('APP_URI')) {
+            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
+        }
         if (!headers_sent()) {
-            setcookie(self::$cookieName, '', time() + 1, defined('APP_URI') ? constant('APP_URI') : '/', $_SERVER['HTTP_HOST'], true, true);
+            setcookie(self::$cookieName, '', time() + 1, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, true);
         }
     }
 }

@@ -5,8 +5,8 @@
 
 namespace SpryPhp\Model;
 
+use Exception;
 use SpryPhp\Type\TypeAlert;
-use SpryPhp\Provider\Functions;
 
 /**
  * Class for managing and rendering a Single Alert
@@ -32,11 +32,13 @@ class Alert
      *
      * @param string $type    - Type of Alert - error | info | success | warning
      * @param string $message - Message for Alert.
+     *
+     * @throws Exception
      */
     public function __construct(string $type, string $message)
     {
         if (empty(TypeAlert::tryFrom($type))) {
-            Functions::abort('Wrong Alert Type Passed. Must be one of '.implode(', ', array_column(TypeAlert::cases(), 'value')));
+            throw new Exception(sprintf('SpryPHP: Wrong Alert Type Passed. Must be one of: %s', implode(', ', array_column(TypeAlert::cases(), 'value'))), 1);
         }
 
         $this->type = $type;

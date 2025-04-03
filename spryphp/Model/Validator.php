@@ -5,7 +5,7 @@
 
 namespace SpryPhp\Model;
 
-use stdClass;
+use Exception;
 use SpryPhp\Provider\Alerts;
 
 /**
@@ -58,7 +58,7 @@ class Validator
     public function __construct(array|object $params)
     {
         $this->params = (object) $params;
-        $this->validParams = new stdClass();
+        $this->validParams = (object) [];
     }
 
     /**
@@ -72,11 +72,6 @@ class Validator
      */
     public function param(string $param, string $paramLabel = '', mixed $default = null)
     {
-        // if (!isset($this->params->$param) && !$default) {
-        //     Alerts::addAlert('error', 'Parameter ('.(!empty($paramLabel) ? $paramLabel : $param).') is not provided');
-        //     $this->valid = false;
-        // }
-
         if (!isset($this->params->$param)) {
             $this->params->$param = $default;
         }
@@ -190,13 +185,18 @@ class Validator
     /**
      * Convert to String Value
      *
+     * @throws Exception
+     *
      * @return Validator
      */
     public function convertToDate(): Validator
     {
+        if (!defined('APP_TIME')) {
+            throw new Exception("SpryPHP: APP_TIME is not defined.", 1);
+        }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = gmdate('Y-m-d', is_null($this->validParams->$param) ? (defined('APP_TIME') ? constant('APP_TIME') : time()) : strtotime($this->validParams->$param));
+            $this->validParams->$param = gmdate('Y-m-d', is_null($this->validParams->$param) ? constant('APP_TIME') : strtotime($this->validParams->$param));
         }
 
         return $this;
@@ -205,13 +205,18 @@ class Validator
     /**
      * Convert to String Value
      *
+     * @throws Exception
+     *
      * @return Validator
      */
     public function convertToDateTime(): Validator
     {
+        if (!defined('APP_TIME')) {
+            throw new Exception("SpryPHP: APP_TIME is not defined.", 1);
+        }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = gmdate('Y-m-d H:i:s', is_null($this->validParams->$param) ? (defined('APP_TIME') ? constant('APP_TIME') : time()) : strtotime($this->validParams->$param));
+            $this->validParams->$param = gmdate('Y-m-d H:i:s', is_null($this->validParams->$param) ? constant('APP_TIME') : strtotime($this->validParams->$param));
         }
 
         return $this;

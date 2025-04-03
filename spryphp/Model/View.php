@@ -5,6 +5,8 @@
 
 namespace SpryPhp\Model;
 
+use SpryPhp\Provider\Functions;
+
 /**
  * Class for managing and rendering views
  */
@@ -15,8 +17,6 @@ class View
      */
     public function render()
     {
-        ?>
-        No View
-        <?php
+        Functions::d('Missing View File or No View Render Method Set');
     }
 }

@@ -5,6 +5,8 @@
 
 namespace SpryPhp\Provider;
 
+use Exception;
+
 /**
  * Route Instance
  */
@@ -15,9 +17,16 @@ class Route
      *
      * @param string   $path     - Request URI to match.
      * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
      */
-    public static function GET(string $path, callable $callback)
+    public static function GET(string $path, callable $callback): void
     {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your GET Route is not callable.", 1);
+        }
         if (Request::$method === 'GET') {
             self::request($path, $callback);
         }
@@ -28,9 +37,16 @@ class Route
      *
      * @param string   $path     - Request URI to match.
      * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
      */
-    public static function POST(string $path, callable $callback)
+    public static function POST(string $path, callable $callback): void
     {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your POST Route is not callable.", 1);
+        }
         if (Request::$method === 'POST') {
             self::request($path, $callback);
         }
@@ -41,9 +57,16 @@ class Route
      *
      * @param string   $path     - Request URI to match.
      * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
      */
-    public static function DELETE(string $path, callable $callback)
+    public static function DELETE(string $path, callable $callback): void
     {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your DELETE Route is not callable.", 1);
+        }
         if (Request::$method === 'DELETE') {
             self::request($path, $callback);
         }
@@ -54,10 +77,57 @@ class Route
      *
      * @param string   $path     - Request URI to match.
      * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
      */
-    public static function PUT(string $path, callable $callback)
+    public static function PUT(string $path, callable $callback): void
     {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your PUT Route is not callable.", 1);
+        }
         if (Request::$method === 'PUT') {
+            self::request($path, $callback);
+        }
+    }
+
+    /**
+     * HEAD Request
+     *
+     * @param string   $path     - Request URI to match.
+     * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function HEAD(string $path, callable $callback): void
+    {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your HEAD Route is not callable.", 1);
+        }
+        if (Request::$method === 'HEAD') {
+            self::request($path, $callback);
+        }
+    }
+
+    /**
+     * OPTIONS Request
+     *
+     * @param string   $path     - Request URI to match.
+     * @param callable $callback - Callback function.
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function OPTIONS(string $path, callable $callback): void
+    {
+        if (!is_callable($callback)) {
+            throw new Exception("SpryPHP: \$callback in your OPTIONS Route is not callable.", 1);
+        }
+        if (Request::$method === 'OPTIONS') {
             self::request($path, $callback);
         }
     }

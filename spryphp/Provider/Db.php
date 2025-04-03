@@ -5,8 +5,7 @@
 
 namespace SpryPhp\Provider;
 
-use mysqli_result;
-use SpryPhp\Provider\Functions;
+use Exception;
 
 /**
  * Class for managing DB requests
@@ -37,6 +36,8 @@ class Db
     /**
      * Initiate the DB
      *
+     * @throws Exception
+     *
      * @return void
      */
     public static function connect()
@@ -62,14 +63,12 @@ class Db
 
         // Check if connection is Successful or not
         if (!self::$db) {
-            Functions::abort('Server Connection failed: '.mysqli_connect_error());
+            throw new Exception(sprintf('Server Connection failed: %s', mysqli_connect_error()), 1);
         }
 
         if (!mysqli_select_db(self::$db, $database)) {
-            Functions::abort('Database Connection failed: '.mysqli_connect_error());
+            throw new Exception(sprintf('Database Connection failed: %s', mysqli_connect_error()), 1);
         }
-
-        self::updateSchema();
     }
 
     /**
@@ -96,9 +95,9 @@ class Db
      *
      * @param string $sql
      *
-     * @return mysqli_result|bool|null
+     * @return \mysqli_result|bool|null
      */
-    public static function query(string $sql): mysqli_result|bool|null
+    public static function query(string $sql): \mysqli_result|bool|null
     {
         // Make sure we are connected.
         if (!self::$db) {
@@ -114,11 +113,10 @@ class Db
 
             $error = mysqli_error(self::$db);
             if ($error) {
-                Functions::abort($error);
+                throw new Exception(sprintf('Database Error: %s', $error), 1);
             }
-        } catch (\Exception $e) {
-            Functions::dd($e->getMessage());
-            Alerts::addAlert('error', 'Database Error: '.$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception(sprintf('Database Error: %s', $e->getMessage()), 1);
         }
 
         return null;
@@ -369,7 +367,7 @@ class Db
                     $ors = [];
                     foreach ($value as $valueValue) {
                         if (!is_string($valueValue) && is_int($valueValue) && is_float($valueValue)) {
-                            Functions::abort('Database Error: Inner value must be one of String, Int, or Float');
+                            throw new Exception('Database Error: Inner value must be one of String, Int, or Float', 1);
                         }
                         $ors[] = $whereKey.' '.$compare.' '.self::value($valueValue, $compare === 'LIKE');
                     }
@@ -500,21 +498,30 @@ class Db
     /**
      * Check and Update Tables
      *
+     * @param string $schemaFile - Path to Schema File. File must return a DB Scheme Array.
+     *
+     * @throws Exception
+     *
      * @return void
      */
-    public static function updateSchema()
+    public static function updateSchema(string $schemaFile)
     {
-        if (!defined('APP_PATH_DB_SCHEMA_FILE') || !file_exists(constant('APP_PATH_DB_SCHEMA_FILE'))) {
-            Functions::abort('Missing DB Schema File');
+        if (empty($schemaFile) || !file_exists($schemaFile)) {
+            Alerts::addAlert('error', 'Missing DB Schema File');
+            throw new Exception(sprintf("SpryPHP: DB Schema File Not Found: %s)", $schemaFile), 1);
         }
 
-        $schema = require constant('APP_PATH_DB_SCHEMA_FILE');
+        $schema = require $schemaFile;
+
+        if (empty($schema)) {
+            throw new Exception(sprintf("SpryPHP: DB Schema File Not Formatted Correctly: %s)", $schemaFile), 1);
+        }
 
         foreach ($schema as $table => $columns) {
             if (!in_array($table, self::tables(), true)) {
                 $sql = 'CREATE TABLE '.self::key($table).' (id VARCHAR(36) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id))';
                 if (!self::query($sql)) {
-                    Functions::abort('Adding Table ('.$table.') failed: '.mysqli_connect_error().' SQL:'.$sql);
+                    throw new Exception(sprintf('Adding Table (%s) failed: %s SQL: %s', $table, mysqli_connect_error(), $sql), 1);
                 }
             }
 
@@ -538,7 +545,7 @@ class Db
                 if (!in_array($column->name, array_values(array_column($existingColumns, 'name')), true)) {
                     $sql = 'ALTER TABLE '.self::key($table).' ADD '.self::key($column->name).' '.$column->type.' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || (is_int($column->default) || is_float($column->default)) ? $column->default : '"'.$column->default.'"')).' AFTER '.$after;
                     if (!self::query($sql)) {
-                        Functions::abort('Adding Column ('.$column->name.') failed: '.mysqli_connect_error().' SQL:'.$sql);
+                        throw new Exception(sprintf('Adding Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql), 1);
                     }
                     $existingColumns[] = (object) [
                         'name' => $column->name,
@@ -553,26 +560,26 @@ class Db
                     if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && !in_array($existingColumn->name, array_values(array_column($columns, 'name')), true)) {
                         $sql = 'ALTER TABLE '.self::key($table).' DROP COLUMN '.self::key($existingColumn->name);
                         if (!self::query($sql)) {
-                            Functions::abort('Dropping Column ('.$column->name.') failed: '.mysqli_connect_error().' SQL:'.$sql);
+                            throw new Exception(sprintf('Dropping Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql), 1);
                         }
                     } elseif ($column->name === $existingColumn->name) {
                         if ((!empty($column->type) && !empty($existingColumn->type) && trim(strtolower($column->type)) !== trim(strtolower($existingColumn->type))) || (is_null($column->default) && !is_null($existingColumn->default)) || (!is_null($column->default) && is_null($existingColumn->default)) || (!empty($column->default) && !empty($existingColumn->default) && trim(strtolower($column->default)) !== trim(strtolower($existingColumn->default))) || $column->null !== $existingColumn->null) {
                             $sql = 'ALTER TABLE '.self::key($table).' MODIFY '.self::key($column->name).' '.strtoupper($column->type).' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || (is_int($column->default) || is_float($column->default)) ? $column->default : '"'.$column->default.'"'));
                             if (!self::query($sql)) {
-                                Functions::abort('Updating Column ('.$column->name.') failed: '.mysqli_connect_error().' SQL:'.$sql);
+                                throw new Exception(sprintf('Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql), 1);
                             }
                         }
                         if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && isset($column->index) && isset($existingColumn->index) && $column->index !== $existingColumn->index) {
                             if ($existingColumn->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' DROP INDEX index_'.self::key($column->name);
                                 if (!self::query($sql)) {
-                                    Functions::abort('Updating Column ('.$column->name.') Updating Index failed: '.mysqli_connect_error().' SQL:'.$sql);
+                                    throw new Exception(sprintf('Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql), 1);
                                 }
                             }
                             if ($column->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' ADD '.($column->index === 'unique' ? 'UNIQUE' : 'INDEX').' index_'.self::key($column->name).' ('.self::key($column->name).')';
                                 if (!self::query($sql)) {
-                                    Functions::abort('Updating Column ('.$column->name.') Updating Index failed: '.mysqli_connect_error().' SQL:'.$sql);
+                                    throw new Exception(sprintf('Adding Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql), 1);
                                 }
                             }
                         }
