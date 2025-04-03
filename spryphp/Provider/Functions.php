@@ -16,46 +16,67 @@ use SpryPhp\Provider\Route;
  */
 class Functions
 {
+    /**
+     * Prettify Error Messages and Stack Traces.
+     *
+     * @param string|array $errors
+     * @param string       $trace
+     *
+     * @uses APP_DEBUG
+     * @uses APP_PATH_ROOT
+     *
+     * @return void
+     */
+    public static function displayError(mixed $errors, string $trace = ''): void
+    {
+        echo '<pre>';
+        if ($errors) {
+            if (defined('APP_PATH_ROOT')) {
+                print_r(json_decode(str_replace(constant('APP_PATH_ROOT'), '', json_encode($errors))));
+            } else {
+                print_r($errors);
+            }
+        }
+
+        if (!$trace) {
+            ob_start();
+            debug_print_backtrace(0);
+            $trace = ob_get_contents();
+            ob_end_clean();
+        }
+
+        if ($trace && defined('APP_DEBUG')) {
+            echo "\n";
+            echo '<span style="color:#975;">';
+            if (defined('APP_PATH_ROOT')) {
+                echo str_replace(constant('APP_PATH_ROOT'), '', $trace);
+            } else {
+                echo $trace;
+            }
+            echo '</span>';
+        }
+        echo '</pre>';
+    }
 
     /**
      * Basic Dump function
      *
      * @param mixed ...$data
      *
-     * @uses APP_DEBUG
-     * @uses APP_PATH_ROOT
-     *
-     * @throws Exception
-     *
      * @return void
      */
     public static function d(...$data): void
     {
-        if (!defined('APP_DEBUG')) {
-            throw new Exception("SpryPHP: APP_DEBUG is not defined.", 1);
-        }
-        if (!defined('APP_PATH_ROOT')) {
-            throw new Exception("SpryPHP: APP_PATH_ROOT is not defined.", 1);
-        }
         if (!empty($data) && is_array($data) && count($data) === 1) {
             $data = $data[0];
         }
+
         ob_start();
-        if ($data) {
-            print_r($data);
-            echo "\n";
-        }
-        if (!empty(constant('APP_DEBUG'))) {
-            echo '<span style="color:#975;">';
-            debug_print_backtrace(0);
-            echo '</span>';
-        }
-        $contents = ob_get_contents();
+        debug_print_backtrace(0);
+        $trace = ob_get_contents();
         ob_end_clean();
 
-        echo '<pre>';
-        echo str_replace(dirname(constant('APP_PATH_ROOT')), '', str_replace(constant('APP_PATH_ROOT'), '', $contents));
-        echo '</pre>';
+        self::displayError($data, $trace);
     }
 
     /**
@@ -63,17 +84,33 @@ class Functions
      *
      * @param mixed ...$data
      *
-     * @uses APP_DEBUG
-     * @uses APP_PATH_ROOT
-     *
-     * @throws Exception
-     *
      * @return void
      */
     public static function dd(...$data): void
     {
-        self::d(...$data);
+        if (!empty($data) && is_array($data) && count($data) === 1) {
+            $data = $data[0];
+        }
+
+        ob_start();
+        debug_print_backtrace(0);
+        $trace = ob_get_contents();
+        ob_end_clean();
+
+        self::displayError($data, $trace);
         exit;
+    }
+
+    /**
+     * Prettify Exceptions Messages and Stack Traces.
+     *
+     * @return void
+     */
+    public static function formatExceptions(): void
+    {
+        set_exception_handler(function (\Throwable $exception) {
+            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), 'in '.$exception->getFile().':'.$exception->getLine()."\n".$exception->getTraceAsString());
+        });
     }
 
     /**
