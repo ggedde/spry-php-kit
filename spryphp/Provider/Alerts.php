@@ -21,22 +21,17 @@ class Alerts
     private static array $alerts = [];
 
     /**
-     * Cookie name for Alerts
-     * Alerts need to be persistent, so they are stored in a cookie.
-     *
-     * @var string $cookieName
-     */
-    private static string $cookieName = 'ac-alerts';
-
-    /**
      * Check if the user is logged in.
      *
      * @return bool
      */
     public static function getFromSession()
     {
-        if (!empty($_COOKIE[self::$cookieName])) {
-            $alerts = json_decode(base64_decode($_COOKIE[self::$cookieName]));
+        if (!defined('APP_SESSION_COOKIE_ALERTS_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_ALERTS_NAME is not defined.", 1);
+        }
+        if (!empty($_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')])) {
+            $alerts = json_decode(base64_decode($_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')]));
             if (!empty($alerts) && is_array($alerts)) {
                 self::$alerts = $alerts;
             }
@@ -103,14 +98,7 @@ class Alerts
      */
     private static function storeAlerts(): void
     {
-        if (!defined('APP_URI')) {
-            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
-        }
-        if (!headers_sent()) {
-            $cookieValue = base64_encode(json_encode(self::$alerts));
-            setcookie(self::$cookieName, $cookieValue, time() + 3600, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, true);
-            $_COOKIE[self::$cookieName] = $cookieValue;
-        }
+        self::updateCookie(base64_encode(json_encode(self::$alerts)), time() + 3600, true);
     }
 
     /**
@@ -123,11 +111,36 @@ class Alerts
      */
     private static function dumpAlerts(): void
     {
+        self::updateCookie('', time() - 1);
+    }
+
+    /**
+     * Update Cookie
+     *
+     * @param string $value
+     * @param int    $time
+     * @param bool   $setGlobal
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    private static function updateCookie(string $value, int $time, $setGlobal = false): void
+    {
         if (!defined('APP_URI')) {
             throw new Exception("SpryPHP: APP_URI is not defined.", 1);
         }
+        if (!defined('APP_SESSION_COOKIE_ALERTS_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_ALERTS_NAME is not defined.", 1);
+        }
+        if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.", 1);
+        }
         if (!headers_sent()) {
-            setcookie(self::$cookieName, '', time() + 1, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, true);
+            setcookie(constant('APP_SESSION_COOKIE_ALERTS_NAME'), $value, $time, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+            if ($setGlobal) {
+                $_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')] = $value;
+            }
         }
     }
 }
