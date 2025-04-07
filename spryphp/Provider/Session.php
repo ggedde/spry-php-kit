@@ -28,6 +28,13 @@ class Session
     private static ?string $type = null;
 
     /**
+     * Session User
+     *
+     * @var object|null $user
+     */
+    private static ?object $user = null;
+
+    /**
      * Initiate the Session
      *
      * @uses APP_SESSION_COOKIE_NAME
@@ -57,17 +64,19 @@ class Session
     }
 
     /**
-     * Sets the Session Type and Id.
+     * Sets the Session Type, Id, and User.
      *
      * @param string $sessionType - Session Type, like "admin", "user", etc.
      * @param string $sessionId   - Unique String for Session.
+     * @param object $sessionUser - Object for User. (Use Anonymous object for Single Admin User or No User, ex. {name: "Admin"} or {name: "Anonymous"})
      *
      * @return void
      */
-    public static function set(string $sessionType, string $sessionId)
+    public static function set(string $sessionType, string $sessionId, object $sessionUser)
     {
         self::$type = $sessionType;
         self::$id   = self::makeIdFrom($sessionId);
+        self::$user = $sessionUser;
         self::updateCookie(self::$id);
     }
 
@@ -131,6 +140,16 @@ class Session
     public static function getType(): ?string
     {
         return self::$type;
+    }
+
+    /**
+     * Get the Session User
+     *
+     * @return object|null
+     */
+    public static function getUser(): ?object
+    {
+        return self::$user;
     }
 
     /**
