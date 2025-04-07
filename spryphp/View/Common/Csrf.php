@@ -1,19 +1,19 @@
 <?php declare(strict_types=1);
 /**
- * CSRF Component
+ * CSRF View
  */
 
-namespace SpryPhp\View\Component;
+namespace SpryPhp\View\Common;
 
 use SpryPhp\Provider\Session;
 
 /**
- * Class for Csrf Component
+ * Class for Csrf View
  */
 class Csrf
 {
     /**
-     * Construct the Csrf Component
+     * Construct the Csrf View
      */
     public function __construct()
     {
