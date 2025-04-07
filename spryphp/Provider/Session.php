@@ -66,13 +66,13 @@ class Session
     /**
      * Sets the Session Type, Id, and User.
      *
-     * @param string $sessionId   - Unique String for Session.
-     * @param string $sessionType - Session Type, like "admin", "user", etc.
-     * @param object $sessionUser - Object for User. Use Anonymous object for Single Admin User or No User Data, ex. {name: "Admin"} or {name: "Anonymous"}
+     * @param string      $sessionId   - Unique String for Session.
+     * @param string|null $sessionType - Session Type, like "admin", "user", etc.
+     * @param object|null $sessionUser - Object for User. Use `null` or Anonymous object for Single User, ex. {name: "Admin"} or {name: "Anonymous"}
      *
      * @return void
      */
-    public static function set(string $sessionId, string $sessionType, object $sessionUser)
+    public static function set(string $sessionId, ?string $sessionType = null, ?object $sessionUser = null)
     {
         self::$id   = self::makeIdFrom($sessionId);
         self::$type = $sessionType;
