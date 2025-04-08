@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "ggedde/spry-php-kit",
-    "type": "project",
+    "type": "library",
     "description": "The starter kit for SpryPHP.",
     "keywords": ["spryphp", "spry-php", "framework", "php", "toolkit"],
     "license": "MIT",
