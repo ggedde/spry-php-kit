@@ -37,7 +37,7 @@ class Session
      *
      * @return string|null
      */
-    public static function start(): string
+    public static function setup(): string
     {
         if (!defined('APP_SESSION_COOKIE_NAME')) {
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.", 1);
@@ -49,7 +49,7 @@ class Session
 
         // Check to see if the Session is still active, but has expired.
         if (empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) && !empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ACTIVE')])) {
-            self::delete();
+            self::clear();
             Functions::abort('Your Session has Expired');
         }
 
@@ -109,11 +109,11 @@ class Session
     }
 
     /**
-     * Delete the Session.
+     * Clear the Session.
      *
      * @return bool
      */
-    public static function delete()
+    public static function clear()
     {
         self::$id   = null;
         self::$user = null;

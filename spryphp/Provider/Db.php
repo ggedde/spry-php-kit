@@ -507,7 +507,7 @@ class Db
     public static function updateSchema(string $schemaFile)
     {
         if (empty($schemaFile) || !file_exists($schemaFile)) {
-            Alerts::addAlert('error', 'Missing DB Schema File');
+            Alerts::set('error', 'Missing DB Schema File');
             throw new Exception(sprintf("SpryPHP: DB Schema File Not Found: %s)", $schemaFile), 1);
         }
 

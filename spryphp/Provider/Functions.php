@@ -191,7 +191,7 @@ class Functions
     public static function abort($error): void
     {
         if ($error) {
-            Alerts::addAlert('error', $error);
+            Alerts::set('error', $error);
             if (!defined('APP_URI_LOGIN')) {
                 throw new Exception("SpryPHP: APP_URI_LOGIN is not defined", 1);
             }

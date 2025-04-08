@@ -21,11 +21,11 @@ class Alerts
     private static array $alerts = [];
 
     /**
-     * Check if the user is logged in.
+     * Setup Alerts
      *
      * @return bool
      */
-    public static function getFromSession()
+    public static function setup()
     {
         if (!defined('APP_SESSION_COOKIE_NAME_ALERTS')) {
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.", 1);
@@ -39,35 +39,24 @@ class Alerts
     }
 
     /**
-     * Get Alerts
+     * Get All Alerts
      *
      * @return Alert[]
      */
-    public static function getAlerts(): array
+    public static function get(): array
     {
         return self::$alerts;
     }
 
     /**
-     * Get User Type
-     *
-     * @return void
-     */
-    public static function removeAlerts(): void
-    {
-        self::$alerts = [];
-        self::dumpAlerts();
-    }
-
-    /**
-     * Add Alert
+     * Set an Alert
      *
      * @param string $type    - Type of Alert - error | info | success | warning
      * @param string $message - Message for Alert
      *
      * @return void
      */
-    public static function addAlert(string $type, string $message): void
+    public static function set(string $type, string $message): void
     {
         if (headers_sent()) {
             throw new Exception(sprintf('SpryPHP: Headers Already Sent Alert: %s', $message), 1);
@@ -85,32 +74,17 @@ class Alerts
             self::$alerts[] = new Alert($type, $message);
         }
 
-        self::storeAlerts();
-    }
-
-    /**
-     * Store Alerts
-     * Add Alerts to Session
-     *
-     * @throws Exception
-     *
-     * @return void
-     */
-    private static function storeAlerts(): void
-    {
         self::updateCookie(base64_encode(json_encode(self::$alerts)), time() + 3600, true);
     }
 
     /**
-     * Dump Alerts
-     * Remove Alerts from Session So they don't show up again.
-     *
-     * @throws Exception
+     * Clear All Alerts
      *
      * @return void
      */
-    private static function dumpAlerts(): void
+    public static function clear(): void
     {
+        self::$alerts = [];
         self::updateCookie('', time() - 1);
     }
 
