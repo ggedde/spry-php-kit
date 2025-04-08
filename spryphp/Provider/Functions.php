@@ -201,7 +201,7 @@ class Functions
             }
 
             if (!in_array(Request::$path, [constant('APP_URI_LOGIN'), constant('APP_URI_LOGOUT')], true)) {
-                Route::go(constant('APP_URI_LOGIN'));
+                Route::goTo(constant('APP_URI_LOGIN'));
             }
         }
     }

@@ -139,7 +139,7 @@ class Route
      *
      * @return void
      */
-    public static function go($path)
+    public static function goTo($path)
     {
         header('Location: '.$path);
         exit;

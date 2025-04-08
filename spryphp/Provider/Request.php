@@ -106,9 +106,11 @@ class Request
     /**
      * Construct the Request.
      *
+     * @uses APP_REQUEST_VERIFY_CSRF
+     *
      * @return void
      */
-    public static function getData()
+    public static function setup()
     {
         self::$pathFull = $_SERVER['REQUEST_URI'];
         self::$filters = (object) [];
@@ -193,9 +195,11 @@ class Request
         }
 
         // Check and Validate CSRF Token
-        $csrf = Session::getCsrf();
-        if ($csrf && ((Request::$method !== 'GET' && (empty($_REQUEST['csrf']) || $_REQUEST['csrf'] !== $csrf)) || (Request::$method === 'GET' && !empty($_REQUEST['csrf']) && $_REQUEST['csrf'] !== $csrf))) {
-            Functions::abort('Invalid CSRF Token.');
+        if (defined('APP_REQUEST_VERIFY_CSRF') && !empty(constant('APP_REQUEST_VERIFY_CSRF'))) {
+            $csrf = Session::getCsrf();
+            if ($csrf && ((self::$method !== 'GET' && (empty($_REQUEST['csrf']) || $_REQUEST['csrf'] !== $csrf)) || (self::$method === 'GET' && !empty($_REQUEST['csrf']) && $_REQUEST['csrf'] !== $csrf))) {
+                Functions::abort('Invalid CSRF Token.'.self::$method);
+            }
         }
 
         if (self::$method === 'GET' && !empty($_GET)) {

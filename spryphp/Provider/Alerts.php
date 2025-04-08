@@ -27,11 +27,11 @@ class Alerts
      */
     public static function getFromSession()
     {
-        if (!defined('APP_SESSION_COOKIE_ALERTS_NAME')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_ALERTS_NAME is not defined.", 1);
+        if (!defined('APP_SESSION_COOKIE_NAME_ALERTS')) {
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.", 1);
         }
-        if (!empty($_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')])) {
-            $alerts = json_decode(base64_decode($_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')]));
+        if (!empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')])) {
+            $alerts = json_decode(base64_decode($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')]));
             if (!empty($alerts) && is_array($alerts)) {
                 self::$alerts = $alerts;
             }
@@ -130,16 +130,16 @@ class Alerts
         if (!defined('APP_URI')) {
             throw new Exception("SpryPHP: APP_URI is not defined.", 1);
         }
-        if (!defined('APP_SESSION_COOKIE_ALERTS_NAME')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_ALERTS_NAME is not defined.", 1);
+        if (!defined('APP_SESSION_COOKIE_NAME_ALERTS')) {
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.", 1);
         }
         if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.", 1);
         }
         if (!headers_sent()) {
-            setcookie(constant('APP_SESSION_COOKIE_ALERTS_NAME'), $value, $time, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+            setcookie(constant('APP_SESSION_COOKIE_NAME_ALERTS'), $value, $time, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
             if ($setGlobal) {
-                $_COOKIE[constant('APP_SESSION_COOKIE_ALERTS_NAME')] = $value;
+                $_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')] = $value;
             }
         }
     }
