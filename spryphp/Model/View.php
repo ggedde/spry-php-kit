@@ -1,22 +1,26 @@
 <?php declare(strict_types = 1);
 /**
- * This file is to handle View Templates
+ * This file is to handle a View Template
  */
 
 namespace SpryPhp\Model;
 
-use SpryPhp\Provider\Functions;
+use Exception;
 
 /**
- * Class for managing and rendering views
+ * Class for managing and rendering a view
  */
 class View
 {
     /**
-     * Renders the HTML
+     * Outputs the HTML for the View Item.
+     *
+     * @throws Exception
+     *
+     * @return void
      */
     public function render()
     {
-        Functions::d('Missing View File or No View Render Method Set');
+        throw new Exception('SpryPHP: Missing View File or No View Render Method Set.');
     }
 }

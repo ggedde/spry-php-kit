@@ -29,7 +29,7 @@ class Functions
      */
     public static function displayError(mixed $errors, string $trace = ''): void
     {
-        echo '<div style="padding: .5em;"><div style="padding: .8em 1.6em; background-color: light-dark(#eee, #333); border: 1px solid #888; border-radius: .5em; line-height: 1.4; overflow: auto;"><pre style="white-space: pre-line;">';
+        echo '<div style="padding: .5em;"><div style="padding: .8em 1.6em; background-color: light-dark(#eee, #333); border: 1px solid #888; border-radius: .5em; line-height: 1.4; overflow: auto;"><pre style="white-space: pre-wrap;">';
         if ($errors) {
             if (defined('APP_PATH_ROOT')) {
                 print_r(json_decode(str_replace(constant('APP_PATH_ROOT'), '', json_encode($errors))));
@@ -122,7 +122,7 @@ class Functions
      *
      * @return void
      */
-    public static function initiateDebug(): void
+    public static function setDebug(): void
     {
         if (!defined('APP_DEBUG')) {
             throw new Exception("SpryPHP: APP_DEBUG is not defined.");
@@ -263,6 +263,24 @@ class Functions
     public static function newUuid(): string
     {
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(dechex(intval(number_format(floatval(time().explode(' ', microtime())[0]), 6, '', ''))).bin2hex(random_bytes(9)), 4));
+    }
+
+    /**
+     * Checks the App for issues
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function checkAppIntegrity(): void
+    {
+        if (defined('APP_AUTH_KEY') && constant('APP_AUTH_KEY') === '__AUTH_KEY__') {
+            throw new Exception("SpryPHP: Please update APP_AUTH_KEY to a secure and unique value.");
+        }
+
+        if (defined('APP_AUTH_PASSWORD') && constant('APP_AUTH_PASSWORD') === '__AUTH_PASSWORD__') {
+            throw new Exception("SpryPHP: Please update APP_AUTH_PASSWORD to a secure and unique value.");
+        }
     }
 
     /**
