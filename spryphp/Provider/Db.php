@@ -49,6 +49,23 @@ class Db
         $database = getenv('DB_NAME');
         $socket   = null;
 
+        // Check if Variables are set
+        if (!$hostname) {
+            throw new Exception('SpryPhp: DB Connection Error. Environment Variable (DB_HOST) is not set.');
+        }
+
+        if (!$username) {
+            throw new Exception('SpryPhp: DB Connection Error. Environment Variable (DB_USER) is not set.');
+        }
+
+        if (!$password) {
+            throw new Exception('SpryPhp: DB Connection Error. Environment Variable (DB_PASS) is not set.');
+        }
+
+        if (!$database) {
+            throw new Exception('SpryPhp: DB Connection Error. Environment Variable (DB_NAME) is not set.');
+        }
+
         if (strpos($hostname, ':')) {
             $serverInfo = explode(':', $hostname);
             $hostname = $serverInfo[0];
@@ -63,11 +80,11 @@ class Db
 
         // Check if connection is Successful or not
         if (!self::$db) {
-            throw new Exception(sprintf('Server Connection failed: %s', mysqli_connect_error()));
+            throw new Exception(sprintf('SpryPhp: Server Connection failed: %s', mysqli_connect_error()));
         }
 
         if (!mysqli_select_db(self::$db, $database)) {
-            throw new Exception(sprintf('Database Connection failed: %s', mysqli_connect_error()));
+            throw new Exception(sprintf('SpryPhp: Database Connection failed: %s', mysqli_connect_error()));
         }
     }
 
@@ -113,10 +130,10 @@ class Db
 
             $error = mysqli_error(self::$db);
             if ($error) {
-                throw new Exception(sprintf('Database Error: %s', $error));
+                throw new Exception(sprintf('SpryPhp: Database Error: %s', $error));
             }
         } catch (Exception $e) {
-            throw new Exception(sprintf('Database Error: %s', $e->getMessage()));
+            throw new Exception(sprintf('SpryPhp: Database Error: %s', $e->getMessage()));
         }
 
         return null;
@@ -520,7 +537,7 @@ class Db
             if (!in_array($table, self::tables(), true)) {
                 $sql = 'CREATE TABLE '.self::key($table).' (id VARCHAR(36) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id))';
                 if (!self::query($sql)) {
-                    throw new Exception(sprintf('Adding Table (%s) failed: %s SQL: %s', $table, mysqli_connect_error(), $sql));
+                    throw new Exception(sprintf('SpryPhp: Adding Table (%s) failed: %s SQL: %s', $table, mysqli_connect_error(), $sql));
                 }
             }
 
@@ -544,7 +561,7 @@ class Db
                 if (!in_array($column->name, array_values(array_column($existingColumns, 'name')), true)) {
                     $sql = 'ALTER TABLE '.self::key($table).' ADD '.self::key($column->name).' '.$column->type.' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || (is_int($column->default) || is_float($column->default)) ? $column->default : '"'.$column->default.'"')).' AFTER '.$after;
                     if (!self::query($sql)) {
-                        throw new Exception(sprintf('Adding Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                        throw new Exception(sprintf('SpryPhp: Adding Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                     }
                     $existingColumns[] = (object) [
                         'name' => $column->name,
@@ -559,26 +576,26 @@ class Db
                     if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && !in_array($existingColumn->name, array_values(array_column($columns, 'name')), true)) {
                         $sql = 'ALTER TABLE '.self::key($table).' DROP COLUMN '.self::key($existingColumn->name);
                         if (!self::query($sql)) {
-                            throw new Exception(sprintf('Dropping Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                            throw new Exception(sprintf('SpryPhp: Dropping Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                         }
                     } elseif ($column->name === $existingColumn->name) {
                         if ((!empty($column->type) && !empty($existingColumn->type) && trim(strtolower($column->type)) !== trim(strtolower($existingColumn->type))) || (is_null($column->default) && !is_null($existingColumn->default)) || (!is_null($column->default) && is_null($existingColumn->default)) || (!empty($column->default) && !empty($existingColumn->default) && trim(strtolower($column->default)) !== trim(strtolower($existingColumn->default))) || $column->null !== $existingColumn->null) {
                             $sql = 'ALTER TABLE '.self::key($table).' MODIFY '.self::key($column->name).' '.strtoupper($column->type).' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || (is_int($column->default) || is_float($column->default)) ? $column->default : '"'.$column->default.'"'));
                             if (!self::query($sql)) {
-                                throw new Exception(sprintf('Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                throw new Exception(sprintf('SpryPhp: Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                             }
                         }
                         if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && isset($column->index) && isset($existingColumn->index) && $column->index !== $existingColumn->index) {
                             if ($existingColumn->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' DROP INDEX index_'.self::key($column->name);
                                 if (!self::query($sql)) {
-                                    throw new Exception(sprintf('Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                    throw new Exception(sprintf('SpryPhp: Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                                 }
                             }
                             if ($column->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' ADD '.($column->index === 'unique' ? 'UNIQUE' : 'INDEX').' index_'.self::key($column->name).' ('.self::key($column->name).')';
                                 if (!self::query($sql)) {
-                                    throw new Exception(sprintf('Adding Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                    throw new Exception(sprintf('SpryPhp: Adding Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                                 }
                             }
                         }
