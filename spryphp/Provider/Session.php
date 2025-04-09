@@ -35,9 +35,9 @@ class Session
      *
      * @throws Exception
      *
-     * @return string|null
+     * @return void
      */
-    public static function setup(): string
+    public static function setup(): void
     {
         if (!defined('APP_SESSION_COOKIE_NAME')) {
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.");
@@ -56,15 +56,11 @@ class Session
         // Check to see if we already have a session, if so then lets use it.
         if (isset($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) && !empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME')])) {
             self::$id = $_COOKIE[constant('APP_SESSION_COOKIE_NAME')];
-
-            return self::$id;
+        } else {
+            // If no session, then lets create a new Guest Session.
+            self::$id = self::makeIdFrom(microtime());
+            self::updateCookie(self::$id, self::getTtl(true), true);
         }
-
-        // If no session, then lets create a new Guest Session.
-        self::$id = self::makeIdFrom(microtime());
-        self::updateCookie(self::$id, self::getTtl(true), true);
-
-        return self::$id;
     }
 
     /**
