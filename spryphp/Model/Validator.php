@@ -192,7 +192,7 @@ class Validator
     public function convertToDate(): Validator
     {
         if (!defined('APP_TIME')) {
-            throw new Exception("SpryPHP: APP_TIME is not defined.", 1);
+            throw new Exception("SpryPHP: APP_TIME is not defined.");
         }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
@@ -212,7 +212,7 @@ class Validator
     public function convertToDateTime(): Validator
     {
         if (!defined('APP_TIME')) {
-            throw new Exception("SpryPHP: APP_TIME is not defined.", 1);
+            throw new Exception("SpryPHP: APP_TIME is not defined.");
         }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {

@@ -40,11 +40,11 @@ class Session
     public static function setup(): string
     {
         if (!defined('APP_SESSION_COOKIE_NAME')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.");
         }
 
         if (!defined('APP_SESSION_COOKIE_NAME_ACTIVE')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.");
         }
 
         // Check to see if the Session is still active, but has expired.
@@ -152,7 +152,7 @@ class Session
     public static function getCsrf(): ?string
     {
         if (!defined('APP_AUTH_KEY')) {
-            throw new Exception("SpryPHP: APP_AUTH_KEY is not defined", 1);
+            throw new Exception("SpryPHP: APP_AUTH_KEY is not defined");
         }
 
         return self::$id ? sha1(self::$id) : (constant('APP_AUTH_KEY') ? sha1(constant('APP_AUTH_KEY')) : null);
@@ -172,11 +172,11 @@ class Session
     public static function getTtl(bool $guest = false): int
     {
         if (!defined('APP_SESSION_TTL')) {
-            throw new Exception("SpryPHP: APP_SESSION_TTL is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_TTL is not defined.");
         }
 
         if (!defined('APP_SESSION_TTL_GUEST')) {
-            throw new Exception("SpryPHP: APP_SESSION_TTL_GUEST is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_TTL_GUEST is not defined.");
         }
 
         return intval(constant($guest ? 'APP_SESSION_TTL_GUEST' : 'APP_SESSION_TTL'));
@@ -196,7 +196,7 @@ class Session
     public static function makeIdFrom(string $sessionUniqueString): string
     {
         if (!defined('APP_AUTH_KEY')) {
-            throw new Exception("SpryPHP: APP_AUTH_KEY is not defined.", 1);
+            throw new Exception("SpryPHP: APP_AUTH_KEY is not defined.");
         }
 
         return sha1(constant('APP_AUTH_KEY').$sessionUniqueString);
@@ -221,16 +221,16 @@ class Session
     private static function updateCookie(string $sessionId = '', int $sessionTtl = 0, bool $sessionGuest = false)
     {
         if (!defined('APP_SESSION_COOKIE_NAME')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.");
         }
         if (!defined('APP_SESSION_COOKIE_NAME_ACTIVE')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.");
         }
         if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.");
         }
         if (!defined('APP_URI')) {
-            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
+            throw new Exception("SpryPHP: APP_URI is not defined.");
         }
 
         if (!$sessionGuest) {

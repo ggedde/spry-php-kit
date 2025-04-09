@@ -31,7 +31,7 @@ class Store
     public static function setup(): void
     {
         if (!defined('APP_SESSION_COOKIE_NAME_STORE')) {
-            throw new Exception('SpryPHP: APP_SESSION_COOKIE_NAME_STORE is not defined.', 1);
+            throw new Exception('SpryPHP: APP_SESSION_COOKIE_NAME_STORE is not defined.');
         }
 
         self::$store = (object) [];
@@ -58,7 +58,7 @@ class Store
     public static function set(string $name, $value): void
     {
         if (!defined('APP_SESSION_TTL_STORE')) {
-            throw new Exception('SpryPHP: APP_SESSION_TTL_STORE is not defined.', 1);
+            throw new Exception('SpryPHP: APP_SESSION_TTL_STORE is not defined.');
         }
 
         $name = preg_replace('/[^A-Z_]/', '', str_replace(' ', '_', strtoupper(trim($name))));
@@ -113,13 +113,13 @@ class Store
     private static function updateCookie(string $data, int $ttl)
     {
         if (!defined('APP_SESSION_COOKIE_NAME_STORE')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_STORE is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_STORE is not defined.");
         }
         if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.");
         }
         if (!defined('APP_URI')) {
-            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
+            throw new Exception("SpryPHP: APP_URI is not defined.");
         }
 
         setcookie(constant('APP_SESSION_COOKIE_NAME_STORE'), $data, $ttl, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));

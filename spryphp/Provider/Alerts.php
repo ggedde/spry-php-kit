@@ -28,7 +28,7 @@ class Alerts
     public static function setup()
     {
         if (!defined('APP_SESSION_COOKIE_NAME_ALERTS')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.");
         }
         if (!empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')])) {
             $alerts = json_decode(base64_decode($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')]));
@@ -59,7 +59,7 @@ class Alerts
     public static function set(string $type, string $message): void
     {
         if (headers_sent()) {
-            throw new Exception(sprintf('SpryPHP: Headers Already Sent Alert: %s', $message), 1);
+            throw new Exception(sprintf('SpryPHP: Headers Already Sent Alert: %s', $message));
         }
 
         $hasAlert = false;
@@ -102,13 +102,13 @@ class Alerts
     private static function updateCookie(string $value, int $time, $setGlobal = false): void
     {
         if (!defined('APP_URI')) {
-            throw new Exception("SpryPHP: APP_URI is not defined.", 1);
+            throw new Exception("SpryPHP: APP_URI is not defined.");
         }
         if (!defined('APP_SESSION_COOKIE_NAME_ALERTS')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ALERTS is not defined.");
         }
         if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.", 1);
+            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.");
         }
         if (!headers_sent()) {
             setcookie(constant('APP_SESSION_COOKIE_NAME_ALERTS'), $value, $time, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));

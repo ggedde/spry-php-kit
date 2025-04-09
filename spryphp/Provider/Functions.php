@@ -125,7 +125,7 @@ class Functions
     public static function initiateDebug(): void
     {
         if (!defined('APP_DEBUG')) {
-            throw new Exception("SpryPHP: APP_DEBUG is not defined.", 1);
+            throw new Exception("SpryPHP: APP_DEBUG is not defined.");
         }
 
         if (!empty(constant('APP_DEBUG'))) {
@@ -167,7 +167,7 @@ class Functions
     {
         // Check if file exists and if not, then log an error.
         if (!file_exists($envFile)) {
-            throw new Exception("SpryPHP: Missing ENV File ('.$envFile.')", 1);
+            throw new Exception("SpryPHP: Missing ENV File ('.$envFile.')");
         }
 
         // Load Env File into env vars.
@@ -193,11 +193,11 @@ class Functions
         if ($error) {
             Alerts::set('error', $error);
             if (!defined('APP_URI_LOGIN')) {
-                throw new Exception("SpryPHP: APP_URI_LOGIN is not defined", 1);
+                throw new Exception("SpryPHP: APP_URI_LOGIN is not defined");
             }
 
             if (!defined('APP_URI_LOGOUT')) {
-                throw new Exception("SpryPHP: APP_URI_LOGOUT is not defined", 1);
+                throw new Exception("SpryPHP: APP_URI_LOGOUT is not defined");
             }
 
             if (!in_array(Request::$path, [constant('APP_URI_LOGIN'), constant('APP_URI_LOGOUT')], true)) {

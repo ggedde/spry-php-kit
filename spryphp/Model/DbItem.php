@@ -69,7 +69,7 @@ class DbItem
             $objId = $obj;
             $obj = Db::get($this->dbTable, ['*'], ['id' => $objId]);
             if (empty($obj)) {
-                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in %s', $objId, ucwords($this->dbTable)), 1);
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in %s', $objId, ucwords($this->dbTable)));
             }
         }
 

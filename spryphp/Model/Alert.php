@@ -38,7 +38,7 @@ class Alert
     public function __construct(string $type, string $message)
     {
         if (empty(TypeAlert::tryFrom($type))) {
-            throw new Exception(sprintf('SpryPHP: Wrong Alert Type Passed. Must be one of: %s', implode(', ', array_column(TypeAlert::cases(), 'value'))), 1);
+            throw new Exception(sprintf('SpryPHP: Wrong Alert Type Passed. Must be one of: %s', implode(', ', array_column(TypeAlert::cases(), 'value'))));
         }
 
         $this->type = $type;
