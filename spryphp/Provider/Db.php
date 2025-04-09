@@ -507,14 +507,13 @@ class Db
     public static function updateSchema(string $schemaFile)
     {
         if (empty($schemaFile) || !file_exists($schemaFile)) {
-            Alerts::set('error', 'Missing DB Schema File');
-            throw new Exception(sprintf("SpryPHP: DB Schema File Not Found: %s)", $schemaFile));
+            throw new Exception(sprintf("SpryPHP: DB Schema File Not Found: (%s)", $schemaFile));
         }
 
         $schema = require $schemaFile;
 
-        if (empty($schema)) {
-            throw new Exception(sprintf("SpryPHP: DB Schema File Not Formatted Correctly: %s)", $schemaFile));
+        if (empty($schema) || !is_array($schema)) {
+            throw new Exception(sprintf("SpryPHP: DB Schema File is Empty or Not Formatted Correctly: (%s)", $schemaFile));
         }
 
         foreach ($schema as $table => $columns) {
