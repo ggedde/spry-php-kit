@@ -19,7 +19,7 @@ class Crypt
      * Encrypts then MACs a message
      *
      * @param mixed  $message - Message to encrypt. Uses json_encode() to ensure string.
-     * @param string $key     - Key to use to Encrypt. Default will use System key.
+     * @param string $key     - A Secure Key/Passphrase to use to Encrypt.
      *
      * @return string (Json and Base64 Encoded)
      */
@@ -55,7 +55,7 @@ class Crypt
      * Decrypts a message (after verifying integrity)
      *
      * @param string $message - CipherText Message to Decrypt.
-     * @param string $key     - Key to use to Encrypt. Default will use System key.
+     * @param string $key     - A Secure Key/Passphrase to use to Decrypt. Should be the same as the one used to Encrypt.
      *
      * @return mixed (Json and Base64 Decoded)
      */
