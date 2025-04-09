@@ -86,15 +86,15 @@ class Crypt
             throw new Exception('SpryPHP: Decryption failure. Calculated Values to not match.');
         }
 
-        $nonceSize = openssl_cipher_iv_length(self::METHOD);
+        $nonceSize  = openssl_cipher_iv_length(self::METHOD);
+        $nonce      = mb_substr($cipherText, 0, $nonceSize, '8bit');
         $cipherText = mb_substr($cipherText, $nonceSize, null, '8bit');
-
-        $message = openssl_decrypt(
+        $message    = openssl_decrypt(
             $cipherText,
             self::METHOD,
             $encKey,
             OPENSSL_RAW_DATA,
-            mb_substr($cipherText, 0, $nonceSize, '8bit')
+            $nonce
         );
 
         if (empty($message) || !is_string($message)) {
