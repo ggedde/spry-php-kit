@@ -187,16 +187,18 @@ class Validator
      *
      * @throws Exception
      *
+     * @uses APP_DATETIME_TIME
+     *
      * @return Validator
      */
     public function convertToDate(): Validator
     {
-        if (!defined('APP_TIME')) {
-            throw new Exception("SpryPHP: APP_TIME is not defined.");
+        if (!defined('APP_DATETIME_TIME')) {
+            throw new Exception("SpryPHP: APP_DATETIME_TIME is not defined.");
         }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = gmdate('Y-m-d', is_null($this->validParams->$param) ? constant('APP_TIME') : strtotime($this->validParams->$param));
+            $this->validParams->$param = gmdate('Y-m-d', is_null($this->validParams->$param) ? constant('APP_DATETIME_TIME') : strtotime($this->validParams->$param));
         }
 
         return $this;
@@ -207,16 +209,18 @@ class Validator
      *
      * @throws Exception
      *
+     * @uses APP_DATETIME_TIME
+     *
      * @return Validator
      */
     public function convertToDateTime(): Validator
     {
-        if (!defined('APP_TIME')) {
-            throw new Exception("SpryPHP: APP_TIME is not defined.");
+        if (!defined('APP_DATETIME_TIME')) {
+            throw new Exception("SpryPHP: APP_DATETIME_TIME is not defined.");
         }
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = gmdate('Y-m-d H:i:s', is_null($this->validParams->$param) ? constant('APP_TIME') : strtotime($this->validParams->$param));
+            $this->validParams->$param = gmdate('Y-m-d H:i:s', is_null($this->validParams->$param) ? constant('APP_DATETIME_TIME') : strtotime($this->validParams->$param));
         }
 
         return $this;

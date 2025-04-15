@@ -156,8 +156,8 @@ class Route
         $matches = null;
 
         $path = str_replace('\\/', '/', $path);
-        $regex = '/'.str_replace('/', '\\/', trim($path, '/')).'\/?$/i';
-        preg_match($regex, Request::$pathFull, $matches);
+        $regex = '/^\/'.str_replace('/', '\\/', trim($path, '/')).'\/?$/i';
+        preg_match($regex, Request::$path, $matches);
 
         if (!empty($matches[0])) {
             array_shift($matches);

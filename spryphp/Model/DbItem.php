@@ -32,8 +32,29 @@ class DbItem
      * Created At Timestamp Formatted
      *
      * @var string $createdAtFormatted
+     *
+     * @uses APP_DATETIME_FORMAT
      */
     public string $createdAtFormatted = '';
+
+    /**
+     * Created At Timestamp Local
+     *
+     * @var string $createdAtLocal
+     *
+     * @uses APP_DATETIME_OFFSET
+     */
+    public string $createdAtLocal = '';
+
+    /**
+     * Created At Timestamp Local Formatted
+     *
+     * @var string $createdAtLocalFormatted
+     *
+     * @uses APP_DATETIME_OFFSET
+     * @uses APP_DATETIME_FORMAT
+     */
+    public string $createdAtLocalFormatted = '';
 
     /**
      * Updated At Timestamp
@@ -45,9 +66,30 @@ class DbItem
     /**
      * Updated At Timestamp Formatted
      *
-     * @var string $updatedAt
+     * @var string $updatedAtFormatted
+     *
+     * @uses APP_DATETIME_FORMAT
      */
     public string $updatedAtFormatted = '';
+
+    /**
+     * Updated At Timestamp Local
+     *
+     * @var string $updatedAtLocal
+     *
+     * @uses APP_DATETIME_OFFSET
+     */
+    public string $updatedAtLocal = '';
+
+    /**
+     * Updated At Timestamp Local Formatted
+     *
+     * @var string $updatedAtLocalFormatted
+     *
+     * @uses APP_DATETIME_OFFSET
+     * @uses APP_DATETIME_FORMAT
+     */
+    public string $updatedAtLocalFormatted = '';
 
     /**
      * The DB Table
@@ -84,11 +126,18 @@ class DbItem
             }
         }
 
+        // Format Other Time Options.
         $this->createdAt = !empty($this->createdAt) ? $this->createdAt : gmdate('Y-m-d H:i:s');
         $this->updatedAt = !empty($this->updatedAt) ? $this->updatedAt : gmdate('Y-m-d H:i:s');
+        $this->createdAtFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? constant('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime($this->createdAt));
+        $this->updatedAtFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? constant('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime($this->updatedAt));
 
-        $this->createdAtFormatted = gmdate('M j, y', strtotime('-7 hours', strtotime($this->createdAt)));
-        $this->updatedAtFormatted = gmdate('M j, y', strtotime('-7 hours', strtotime($this->updatedAt)));
+        if (defined('APP_DATETIME_OFFSET')) {
+            $this->createdAtLocal = gmdate('Y-m-d H:i:s', strtotime(constant('APP_DATETIME_OFFSET'), strtotime($this->createdAt)));
+            $this->updatedAtLocal = gmdate('Y-m-d H:i:s', strtotime(constant('APP_DATETIME_OFFSET'), strtotime($this->updatedAt)));
+            $this->createdAtLocalFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? constant('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime(constant('APP_DATETIME_OFFSET'), strtotime($this->createdAt)));
+            $this->updatedAtLocalFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? constant('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime(constant('APP_DATETIME_OFFSET'), strtotime($this->updatedAt)));
+        }
     }
 
     /**

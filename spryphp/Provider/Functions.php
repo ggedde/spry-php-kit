@@ -23,20 +23,42 @@ class Functions
      * @param string       $trace
      *
      * @uses APP_DEBUG
-     * @uses APP_PATH_ROOT
+     * @uses APP_PATH
      *
      * @return void
      */
     public static function displayError(mixed $errors, string $trace = ''): void
     {
         echo '<div style="padding: .5em;"><div style="padding: .8em 1.6em; background-color: light-dark(#eee, #333); border: 1px solid #888; border-radius: .5em; line-height: 1.4; overflow: auto;"><pre style="white-space: pre-wrap;">';
-        if ($errors) {
-            if (defined('APP_PATH_ROOT')) {
-                print_r(json_decode(str_replace(constant('APP_PATH_ROOT'), '', json_encode($errors))));
-            } else {
-                print_r($errors);
-            }
+
+        ob_start();
+        var_dump($errors);
+        $data = ob_get_contents();
+        ob_end_clean();
+
+
+        // $data = str_replace("]=>\n", '] => ', $data);
+        $data = preg_replace('/]=>\n[\ ]*/', '] => ', $data);
+        $data = preg_replace('/bool\((false|true)\)/', '{{bool:}} $1', $data);
+        $data = preg_replace('/int\(([0-9]*)\)/', '{{int:}} $1', $data);
+        $data = preg_replace('/float\(([0-9\.]*)\)/', '{{float:}} $1', $data);
+        $data = preg_replace('/string\(([0-9]*)\).*\"(.*)\"/', '{{str($1):}} $2', $data);
+        $data = preg_replace('/array\(([0-9]*)\).*\{/', '{{array($1):}} {', $data);
+        $data = preg_replace('/object\((.*)\).*\#.*{/', '{{object:}} {{{$1}}} {', $data);
+        $data = preg_replace('/=> NULL/', '=> {{NULL}}', $data);
+        $data = preg_replace('/^NULL/', '{{NULL}}', $data);
+        $data = preg_replace('/{\n[\ ]*}/', '{}', $data);
+
+        $data = str_replace('{{{', '<span style="color: #197239">', $data);
+        $data = str_replace('{{', '<span style="color: #80a0a7">', $data);
+        $data = str_replace(['}}}', '}}'], '</span>', $data);
+        $data = str_replace(' => ', '<span style="color: #888"> => </span>', $data);
+
+        if (defined('APP_PATH')) {
+            $data = str_replace(constant('APP_PATH'), '', $data);
         }
+
+        echo $data;
 
         if (!$trace) {
             ob_start();
@@ -47,9 +69,9 @@ class Functions
 
         if ($trace && defined('APP_DEBUG')) {
             echo "\n";
-            echo '<span style="color:#975;">';
-            if (defined('APP_PATH_ROOT')) {
-                echo str_replace(constant('APP_PATH_ROOT'), '', $trace);
+            echo '<span style="color:#794111;">';
+            if (defined('APP_PATH')) {
+                echo str_replace(constant('APP_PATH'), '', $trace);
             } else {
                 echo $trace;
             }
@@ -61,43 +83,55 @@ class Functions
     /**
      * Basic Dump function
      *
-     * @param mixed ...$data
+     * @param mixed $value     Single Value
+     * @param mixed ...$values Additional Values
      *
      * @return void
      */
-    public static function d(...$data): void
+    public static function d($value, ...$values): void
     {
-        if (!empty($data) && is_array($data) && count($data) === 1) {
-            $data = $data[0];
+        if (!empty($values)) {
+            $value = [
+                $value,
+                ...$values,
+            ];
         }
+
+        $traceArray = debug_backtrace(0, 1);
 
         ob_start();
         debug_print_backtrace(0);
         $trace = ob_get_contents();
         ob_end_clean();
 
-        self::displayError($data, $trace);
+        self::displayError($value, '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace);
     }
 
     /**
      * Basic Die and Dump function
      *
-     * @param mixed ...$data
+     * @param mixed $value     Single Value
+     * @param mixed ...$values Additional Values
      *
      * @return void
      */
-    public static function dd(...$data): void
+    public static function dd($value, ...$values): void
     {
-        if (!empty($data) && is_array($data) && count($data) === 1) {
-            $data = $data[0];
+        if (!empty($values)) {
+            $value = [
+                $value,
+                ...$values,
+            ];
         }
+
+        $traceArray = debug_backtrace(0, 1);
 
         ob_start();
         debug_print_backtrace(0);
         $trace = ob_get_contents();
         ob_end_clean();
 
-        self::displayError($data, $trace);
+        self::displayError($value, '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace);
         exit;
     }
 
@@ -109,7 +143,7 @@ class Functions
     public static function formatExceptions(): void
     {
         set_exception_handler(function (\Throwable $exception) {
-            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), 'in '.$exception->getFile().':'.$exception->getLine()."\n\n".$exception->getTraceAsString());
+            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), '<span style="color: #006499">in '.$exception->getFile().':'.$exception->getLine()."</span>\n\n".$exception->getTraceAsString());
         });
     }
 
@@ -216,6 +250,46 @@ class Functions
     public static function esc($value): string
     {
         return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
+    }
+
+    /**
+     * Convert String for HTML Attribute
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public static function attr($value): string
+    {
+        return str_replace("'", "&#39;", stripslashes($value));
+    }
+
+    /**
+     * Sanitize String
+     *
+     * @param string $string
+     * @param string $space  Character for spaces.
+     *
+     * @return string
+     */
+    public static function sanitizeString(string $string, string $space = '_'): string
+    {
+        $string = preg_replace('/[^a-z0-9\_]/', '', trim(str_replace([' ', '-'], '_', trim(strtolower($string))), '_'));
+        $string = preg_replace('/[_]{2,}/', '_', $string);
+
+        return str_replace('_', $space, $string);
+    }
+
+    /**
+     * Format Title
+     *
+     * @param string $title
+     *
+     * @return string
+     */
+    public static function formatTitle(string $title): string
+    {
+        return ucwords(self::sanitizeString(self::convertToSnakeCase($title), ' '));
     }
 
     /**

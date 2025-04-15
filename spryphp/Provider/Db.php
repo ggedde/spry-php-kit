@@ -27,6 +27,13 @@ class Db
     private static string $lastQuery = '';
 
     /**
+     * The Last Error
+     *
+     * @var string $lastError
+     */
+    private static string $lastError = '';
+
+    /**
      * The Last Total Count
      *
      * @var int $lastTotal
@@ -121,6 +128,8 @@ class Db
             self::connect();
         }
 
+        self::$lastError = '';
+
         try {
             self::$lastQuery = $sql;
             $result = mysqli_query(self::$db, $sql);
@@ -130,6 +139,7 @@ class Db
 
             $error = mysqli_error(self::$db);
             if ($error) {
+                self::$lastError = sprintf('SpryPhp: Database Error: %s', $error);
                 throw new Exception(sprintf('SpryPhp: Database Error: %s', $error));
             }
         } catch (Exception $e) {
@@ -287,6 +297,14 @@ class Db
 
         $values = [];
         $keys = [];
+
+        if (is_array($data) && !isset($data['id'])) {
+            $data['id'] = Functions::newUuid();
+        }
+        if (is_object($data) && !isset($data->id)) {
+            $data->id = Functions::newUuid();
+        }
+
         foreach ($data as $key => $value) {
             $values[] = self::value($value);
             $keys[] = self::key($key);
