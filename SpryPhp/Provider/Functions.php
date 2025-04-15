@@ -88,7 +88,7 @@ class Functions
      *
      * @return void
      */
-    public static function d($value, ...$values): void
+    public static function d(mixed $value, mixed ...$values): void
     {
         if (!empty($values)) {
             $value = [
@@ -115,7 +115,7 @@ class Functions
      *
      * @return void
      */
-    public static function dd($value, ...$values): void
+    public static function dd(mixed $value, mixed ...$values): void
     {
         if (!empty($values)) {
             $value = [
@@ -222,7 +222,7 @@ class Functions
      *
      * @return void
      */
-    public static function abort($error): void
+    public static function abort(string $error): void
     {
         if ($error) {
             Alerts::set('error', $error);
@@ -247,21 +247,21 @@ class Functions
      *
      * @return string
      */
-    public static function esc($value): string
+    public static function esc(string $value): string
     {
         return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
     }
 
     /**
-     * Convert String for HTML Attribute
+     * Convert Value for HTML Attribute
      *
-     * @param string $value
+     * @param mixed $value
      *
      * @return string
      */
-    public static function attr($value): string
+    public static function attr(mixed $value): string
     {
-        return str_replace("'", "&#39;", stripslashes($value));
+        return str_replace("'", "&#39;", stripslashes(strval($value)));
     }
 
     /**
@@ -299,7 +299,7 @@ class Functions
      *
      * @return string
      */
-    public static function convertToCamelCase($data)
+    public static function convertToCamelCase(string $data): string
     {
         if (!is_string($data)) {
             return $data;
@@ -320,7 +320,7 @@ class Functions
      *
      * @return string
      */
-    public static function convertToSnakeCase($data)
+    public static function convertToSnakeCase(string $data): string
     {
         if (!is_string($data)) {
             return $data;
@@ -362,7 +362,7 @@ class Functions
      *
      * @return array
      */
-    public static function getStates()
+    public static function getStates(): array
     {
         return array(
             'AL' => 'Alabama',

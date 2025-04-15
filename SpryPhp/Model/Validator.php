@@ -113,7 +113,7 @@ class Validator
     {
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = floatval($this->validParams->$param);
+            $this->validParams->$param = floatval(preg_replace('/[^0-9\.\-]/', '', strval($this->validParams->$param)));
         }
 
         return $this;
@@ -128,7 +128,65 @@ class Validator
     {
         $param = $this->param;
         if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
-            $this->validParams->$param = intval($this->validParams->$param);
+            $this->validParams->$param = intval(preg_replace('/[^0-9\-]/', '', strval($this->validParams->$param)));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Convert to Numbers Only. Keeps it as a String.
+     *
+     * @return Validator
+     */
+    public function convertToNumbers(): Validator
+    {
+        $param = $this->param;
+        if (isset($this->validParams->$param) || is_null($this->validParams->$param)) {
+            $this->validParams->$param = preg_replace('/[^0-9]/', '', strval($this->validParams->$param));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Convert to Phone
+     *
+     * @return Validator
+     */
+    public function convertToPhone(): Validator
+    {
+        $param = $this->param;
+        if (isset($this->validParams->$param)) {
+            $phone = preg_replace('/[^0-9\#]/', '', strval($this->validParams->$param));
+            $splitExtension = explode('#', $phone, 2);
+
+            $splitCode = str_split(strrev($splitExtension[0]), 10);
+            $phone = strrev($splitCode[0]);
+
+            $this->validParams->$param = vsprintf('(%s) %s-%s%s', str_split($phone, 3)).(!empty($splitExtension[1]) ? ' #'.$splitExtension[1] : '');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Convert to Phone
+     *
+     * @return Validator
+     */
+    public function convertToPhoneInternational(): Validator
+    {
+        $param = $this->param;
+        if (isset($this->validParams->$param)) {
+            $phone = preg_replace('/[^0-9\#]/', '', strval($this->validParams->$param));
+            $splitExtension = explode('#', $phone, 2);
+
+            $splitCode = str_split(strrev($splitExtension[0]), 10);
+            $phone = strrev($splitCode[0]);
+            $code  = strrev($splitCode[1]);
+
+            $this->validParams->$param = ($code ? '+'.$code.' ' : '').vsprintf('(%s) %s-%s%s', str_split($phone, 3)).(!empty($splitExtension[1]) ? ' #'.$splitExtension[1] : '');
         }
 
         return $this;
@@ -183,7 +241,7 @@ class Validator
     }
 
     /**
-     * Convert to String Value
+     * Convert to Date Value
      *
      * @throws Exception
      *
@@ -205,7 +263,7 @@ class Validator
     }
 
     /**
-     * Convert to String Value
+     * Convert to Date Time Value
      *
      * @throws Exception
      *
@@ -244,7 +302,7 @@ class Validator
     }
 
     /**
-     * Convert Date Offset by hours
+     * Convert Date Time Offset by hours
      *
      * @param string $offset - Ex (-7 hours, +2 minutes), etc
      *
@@ -398,6 +456,32 @@ class Validator
         $param = $this->param;
         if (!filter_var($this->validParams->$param, FILTER_VALIDATE_EMAIL)) {
             Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Email Address');
+            $this->valid = false;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Param must be a valid Phone Number
+     *
+     * @return Validator
+     */
+    public function isPhone(): Validator
+    {
+        $param = $this->param;
+        $phone = substr(preg_replace("/[^0-9]/", '', strval($this->validParams->$param)), -10);
+
+        $inValid = match ($phone) {
+            '1234567890' => true,
+            '1231231234' => true,
+            '5555555555' => true,
+            '0000000000' => true,
+            default => false,
+        };
+
+        if ($inValid || strlen($phone) < 10) {
+            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Phone Number');
             $this->valid = false;
         }
 
