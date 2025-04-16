@@ -95,6 +95,11 @@ class Alerts
      * @param int    $time
      * @param bool   $setGlobal
      *
+     * @uses APP_SESSION_COOKIE_NAME_ALERTS
+     * @uses APP_SESSION_COOKIE_HTTP_ONLY
+     * @uses APP_SESSION_COOKIE_SAMESITE
+     * @uses APP_URI
+     *
      * @throws Exception
      *
      * @return void
@@ -111,7 +116,15 @@ class Alerts
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.");
         }
         if (!headers_sent()) {
-            setcookie(constant('APP_SESSION_COOKIE_NAME_ALERTS'), $value, $time, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+            $options = [
+                'expires' => $time,
+                'path' => constant('APP_URI'),
+                'domain' => $_SERVER['HTTP_HOST'],
+                'secure' => true,
+                'httponly' => !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')), // cspell:disable-line.
+                'samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
+            ];
+            setcookie(constant('APP_SESSION_COOKIE_NAME_ALERTS'), $value, $options);
             if ($setGlobal) {
                 $_COOKIE[constant('APP_SESSION_COOKIE_NAME_ALERTS')] = $value;
             }

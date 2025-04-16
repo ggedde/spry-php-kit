@@ -208,6 +208,7 @@ class Session
      * @uses APP_SESSION_COOKIE_NAME
      * @uses APP_SESSION_COOKIE_NAME_ACTIVE
      * @uses APP_SESSION_COOKIE_HTTP_ONLY
+     * @uses APP_SESSION_COOKIE_SAMESITE
      * @uses APP_URI
      *
      * @throws Exception
@@ -229,11 +230,21 @@ class Session
             throw new Exception("SpryPHP: APP_URI is not defined.");
         }
 
+        $options = [
+            'expires' => $sessionId ? 0 : (time() - 1),
+            'path' => constant('APP_URI'),
+            'domain' => $_SERVER['HTTP_HOST'],
+            'secure' => true,
+            'httponly' => !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')), // cspell:disable-line.
+            'samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
+        ];
+
         if (!$sessionGuest) {
-            setcookie(constant('APP_SESSION_COOKIE_NAME_ACTIVE'), $sessionId ? '1' : '', $sessionId ? 0 : (time() - 1), constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+            setcookie(constant('APP_SESSION_COOKIE_NAME_ACTIVE'), $sessionId ? '1' : '', $options);
             $_COOKIE[constant('APP_SESSION_COOKIE_NAME_ACTIVE')] = $sessionId ? '1' : '';
         }
-        setcookie(constant('APP_SESSION_COOKIE_NAME'), $sessionId, $sessionId ? ($sessionTtl ? (time() + intval($sessionTtl)) : 0) : (time() - 1), constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+        $options['expires'] = $sessionId ? ($sessionTtl ? (time() + intval($sessionTtl)) : 0) : (time() - 1);
+        setcookie(constant('APP_SESSION_COOKIE_NAME'), $sessionId, $options);
         $_COOKIE[constant('APP_SESSION_COOKIE_NAME')] = $sessionId;
     }
 }

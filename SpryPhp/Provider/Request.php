@@ -198,7 +198,7 @@ class Request
         if (defined('APP_REQUEST_VERIFY_CSRF') && !empty(constant('APP_REQUEST_VERIFY_CSRF'))) {
             $csrf = Session::getCsrf();
             if ($csrf && ((self::$method !== 'GET' && (empty($_REQUEST['csrf']) || $_REQUEST['csrf'] !== $csrf)) || (self::$method === 'GET' && !empty($_REQUEST['csrf']) && $_REQUEST['csrf'] !== $csrf))) {
-                Functions::abort('Invalid CSRF Token.'.self::$method);
+                Functions::abort('Invalid CSRF Token.');
             }
         }
 

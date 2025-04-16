@@ -104,6 +104,7 @@ class Store
      *
      * @uses APP_SESSION_COOKIE_NAME_STORE
      * @uses APP_SESSION_COOKIE_HTTP_ONLY
+     * @uses APP_SESSION_COOKIE_SAMESITE
      * @uses APP_URI
      *
      * @throws Exception
@@ -122,6 +123,15 @@ class Store
             throw new Exception("SpryPHP: APP_URI is not defined.");
         }
 
-        setcookie(constant('APP_SESSION_COOKIE_NAME_STORE'), $data, $ttl, constant('APP_URI'), $_SERVER['HTTP_HOST'], true, !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')));
+        $options = [
+            'expires' => $ttl,
+            'path' => constant('APP_URI'),
+            'domain' => $_SERVER['HTTP_HOST'],
+            'secure' => true,
+            'httponly' => !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')), // cspell:disable-line.
+            'samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
+        ];
+
+        setcookie(constant('APP_SESSION_COOKIE_NAME_STORE'), $data, $options);
     }
 }
