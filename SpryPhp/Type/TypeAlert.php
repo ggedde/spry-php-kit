@@ -10,8 +10,8 @@ namespace SpryPhp\Type;
  */
 enum TypeAlert: string
 {
-    case Error = 'error';
-    case Info = 'info';
+    case Error   = 'error';
+    case Info    = 'info';
     case Success = 'success';
     case Warning = 'warning';
 }
