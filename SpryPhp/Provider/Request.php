@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle the Request
  */
@@ -110,7 +110,7 @@ class Request
      *
      * @return void
      */
-    public static function setup()
+    public static function setup(): void
     {
         self::$pathFull = $_SERVER['REQUEST_URI'];
         self::$filters = (object) [];

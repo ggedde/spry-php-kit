@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * This file is to handle the DB
  */
@@ -47,7 +47,7 @@ class Db
      *
      * @return void
      */
-    public static function connect()
+    public static function connect(): void
     {
         // MySQL Variables
         $hostname = getenv('DB_HOST');
@@ -187,7 +187,6 @@ class Db
     {
         $data = [];
 
-        // $sql = "SELECT * FROM ".$table." ORDER BY  ASC";
         $sql = "SELECT ".self::columns($columns)." FROM ".self::key($table).self::join($join).self::where($where).self::group($group).self::order($order).self::limit($limit);
 
         // check db for lat lng
@@ -209,6 +208,16 @@ class Db
     public static function getLastQuery(): string
     {
         return strval(self::$lastQuery);
+    }
+
+    /**
+     * Get Last Error
+     *
+     * @return string
+     */
+    public static function getLastError(): string
+    {
+        return strval(self::$lastError);
     }
 
     /**
@@ -234,7 +243,6 @@ class Db
     {
         $data = [];
 
-        // $sql = "SELECT * FROM ".$table." ORDER BY  ASC";
         $sql = "SELECT COUNT(*) FROM ".self::key($table).self::where($where);
 
         // check db for lat lng
@@ -257,7 +265,6 @@ class Db
     {
         $data = [];
 
-        // $sql = "SELECT * FROM ".$table." ORDER BY  ASC";
         $sql = "SELECT SUM(".self::key($column).") FROM ".self::key($table).self::where($where);
 
         // check db for lat lng
@@ -298,6 +305,7 @@ class Db
         $values = [];
         $keys = [];
 
+        // If no ID is passed then lets add one.
         if (is_array($data) && !isset($data['id'])) {
             $data['id'] = Functions::newUuid();
         }
@@ -388,7 +396,7 @@ class Db
                 }
                 $whereKey = self::key($key);
                 $compare = '=';
-                preg_match('/\[(.*)\]/', $key, $compareMatch);
+                preg_match('/\[(.*)\]$/', trim($key), $compareMatch);
                 if (!empty($compareMatch[1]) && in_array($compareMatch[1], ['!', '>', '>=', '<', '<=', '~'], true)) {
                     $compare = $compareMatch[1];
                     if ($compare === '!') {
@@ -533,14 +541,17 @@ class Db
     /**
      * Check and Update Tables
      *
-     * @param string $schemaFile - Path to Schema File. File must return a DB Scheme Array.
+     * @param string $schemaFile    Path to Schema File. File must return a DB Scheme Array.
+     * @param bool   $showResponses Show Responses.
      *
      * @throws Exception
      *
      * @return void
      */
-    public static function updateSchema(string $schemaFile)
+    public static function updateSchema(string $schemaFile, bool $showResponses = false): void
     {
+        $hasChanges = false;
+
         if (empty($schemaFile) || !file_exists($schemaFile)) {
             throw new Exception(sprintf("SpryPHP: DB Schema File Not Found: (%s)", $schemaFile));
         }
@@ -556,6 +567,10 @@ class Db
                 $sql = 'CREATE TABLE '.self::key($table).' (id VARCHAR(36) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id))';
                 if (!self::query($sql)) {
                     throw new Exception(sprintf('SpryPhp: Adding Table (%s) failed: %s SQL: %s', $table, mysqli_connect_error(), $sql));
+                }
+                if ($showResponses) {
+                    $hasChanges = true;
+                    echo 'Added Table ['.self::key($table)."]\n";
                 }
             }
 
@@ -581,6 +596,10 @@ class Db
                     if (!self::query($sql)) {
                         throw new Exception(sprintf('SpryPhp: Adding Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                     }
+                    if ($showResponses) {
+                        $hasChanges = true;
+                        echo 'Altered Table ['.self::key($table).'] Added Column ['.self::key($column->name)."]\n";
+                    }
                     $existingColumns[] = (object) [
                         'name' => $column->name,
                         'type' => $column->type,
@@ -596,11 +615,19 @@ class Db
                         if (!self::query($sql)) {
                             throw new Exception(sprintf('SpryPhp: Dropping Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                         }
+                        if ($showResponses) {
+                            $hasChanges = true;
+                            echo 'Altered Table ['.self::key($table).'] Dropped Column ['.self::key($column->name)."]\n";
+                        }
                     } elseif ($column->name === $existingColumn->name) {
                         if ((!empty($column->type) && !empty($existingColumn->type) && trim(strtolower($column->type)) !== trim(strtolower($existingColumn->type))) || (is_null($column->default) && !is_null($existingColumn->default)) || (!is_null($column->default) && is_null($existingColumn->default)) || (!empty($column->default) && !empty($existingColumn->default) && trim(strtolower($column->default)) !== trim(strtolower($existingColumn->default))) || $column->null !== $existingColumn->null) {
                             $sql = 'ALTER TABLE '.self::key($table).' MODIFY '.self::key($column->name).' '.strtoupper($column->type).' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || (is_int($column->default) || is_float($column->default)) ? $column->default : '"'.$column->default.'"'));
                             if (!self::query($sql)) {
                                 throw new Exception(sprintf('SpryPhp: Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                            }
+                            if ($showResponses) {
+                                $hasChanges = true;
+                                echo 'Altered Table ['.self::key($table).'] Modified Column ['.self::key($column->name)."]\n";
                             }
                         }
                         if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && isset($column->index) && isset($existingColumn->index) && $column->index !== $existingColumn->index) {
@@ -609,17 +636,29 @@ class Db
                                 if (!self::query($sql)) {
                                     throw new Exception(sprintf('SpryPhp: Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                                 }
+                                if ($showResponses) {
+                                    $hasChanges = true;
+                                    echo 'Altered Table ['.self::key($table).'] Dropped Index [index_'.self::key($column->name)."]\n";
+                                }
                             }
                             if ($column->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' ADD '.($column->index === 'unique' ? 'UNIQUE' : 'INDEX').' index_'.self::key($column->name).' ('.self::key($column->name).')';
                                 if (!self::query($sql)) {
                                     throw new Exception(sprintf('SpryPhp: Adding Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                                 }
+                                if ($showResponses) {
+                                    $hasChanges = true;
+                                    echo 'Altered Table ['.self::key($table).'] Added Index [index_'.self::key($column->name)."]\n";
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+
+        if ($showResponses && !$hasChanges) {
+            echo "DB Schema is up to date.\n";
         }
     }
 

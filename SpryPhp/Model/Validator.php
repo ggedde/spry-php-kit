@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle The Validator
  */
@@ -77,13 +77,13 @@ class Validator
     /**
      * Sets the current Param to Validate
      *
-     * @param string $param      - Name of parameter to start checking against.
-     * @param string $paramLabel - Label of parameter to start checking against.
-     * @param string $default    - Default Value if param is not set.
+     * @param string                                  $param      Name of parameter to start checking against.
+     * @param string                                  $paramLabel Label of parameter to start checking against.
+     * @param object|array|string|float|int|bool|null $default    Default Value if param is not set.
      *
      * @return Validator
      */
-    public function param(string $param, string $paramLabel = '', mixed $default = null)
+    public function param(string $param, string $paramLabel = '', object|array|string|float|int|bool|null $default = null)
     {
         if (!isset($this->params->$param)) {
             $this->params->$param = $default;
@@ -714,9 +714,13 @@ class Validator
     public function isDateTime(): Validator
     {
         $param = $this->param;
-        if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && is_string($this->validParams->$param) && (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}\:[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param)
-         || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param)
-         || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}\:[0-9]{2}$/', $this->validParams->$param))) {
+        if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && is_string($this->validParams->$param) &&
+            (
+                preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}\:[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param)
+                || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param)
+                || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}\:[0-9]{2}$/', $this->validParams->$param)
+            )
+        ) {
             $this->validParams->$param = gmdate('Y-m-d H:i:s', strtotime($this->validParams->$param));
         }
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}\:[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param))) {

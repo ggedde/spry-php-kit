@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle the Encryption and Decryption
  */
@@ -18,12 +18,12 @@ class Crypt
     /**
      * Encrypts then MACs a message
      *
-     * @param mixed  $message - Message to encrypt. Uses json_encode() to ensure string.
-     * @param string $key     - A Secure Key/Passphrase to use to Encrypt.
+     * @param object|array|string|float|int|bool|null $message Message to encrypt. Uses json_encode() to ensure string.
+     * @param string                                  $key     A Secure Key/Passphrase to use to Encrypt.
      *
      * @return string (Json and Base64 Encoded)
      */
-    public static function encrypt(mixed $message, string $key): string
+    public static function encrypt(object|array|string|float|int|bool|null $message, string $key): string
     {
         $message = json_encode($message);
 
@@ -57,9 +57,9 @@ class Crypt
      * @param string $message - CipherText Message to Decrypt.
      * @param string $key     - A Secure Key/Passphrase to use to Decrypt. Should be the same as the one used to Encrypt.
      *
-     * @return mixed (Json and Base64 Decoded)
+     * @return object|array|string|float|int|bool|null (Json and Base64 Decoded)
      */
-    public static function decrypt(string $message, string $key)
+    public static function decrypt(string $message, string $key): object|array|string|float|int|bool|null
     {
         $encKey  = hash_hmac(self::HASH_ALGO, 'ENCRYPTION', $key, true);
         $authKey = hash_hmac(self::HASH_ALGO, 'AUTHENTICATION', $key, true);
@@ -69,11 +69,9 @@ class Crypt
         }
 
         // Hash Size -- in case HASH_ALGO is changed
-        $hs = mb_strlen(hash(self::HASH_ALGO, '', true), '8bit');
-        $mac = mb_substr($message, 0, $hs, '8bit');
-
+        $hs         = mb_strlen(hash(self::HASH_ALGO, '', true), '8bit');
+        $mac        = mb_substr($message, 0, $hs, '8bit');
         $cipherText = mb_substr($message, $hs, null, '8bit');
-
         $calculated = hash_hmac(
             self::HASH_ALGO,
             $cipherText,

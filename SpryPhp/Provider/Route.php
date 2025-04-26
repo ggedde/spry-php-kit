@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle View Templates
  */
@@ -139,7 +139,7 @@ class Route
      *
      * @return void
      */
-    public static function goTo($path)
+    public static function goTo(string $path): never
     {
         header('Location: '.$path);
         exit;
@@ -150,8 +150,10 @@ class Route
      *
      * @param string   $path     - Request URI to match.
      * @param callable $callback - Callback function.
+     *
+     * @return void
      */
-    private static function request(string $path, callable $callback)
+    private static function request(string $path, callable $callback): void
     {
         $matches = null;
 

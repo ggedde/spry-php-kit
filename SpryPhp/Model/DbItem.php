@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle The DB Item
  */
@@ -120,9 +120,9 @@ class DbItem
         }
 
         foreach (array_keys((array) $obj) as $key) {
-            $camelKey = Functions::convertToCamelCase($key);
+            $camelKey = Functions::formatCamelCase($key);
             if (in_array($camelKey, array_keys((array) get_object_vars($this)), true)) {
-                $this->$camelKey = is_string($obj->$key) ? Functions::esc($obj->$key) : (is_null($obj->$key) ? '' : $obj->$key);
+                $this->$camelKey = is_string($obj->$key) ? Functions::escString($obj->$key) : (is_null($obj->$key) ? '' : $obj->$key);
             }
         }
 
@@ -216,7 +216,7 @@ class DbItem
         $columns = $this->columns();
 
         foreach (array_keys(get_object_vars($this)) as $key) {
-            $snakeKey = Functions::convertToSnakeCase($key);
+            $snakeKey = Functions::formatSnakeCase($key);
             if (in_array($snakeKey, array_column($columns, 'name'), true) && !in_array($snakeKey, ['created_at', 'updated_at'], true)) {
                 $dataSet->$snakeKey = $this->$key;
             }

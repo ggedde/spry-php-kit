@@ -6,7 +6,6 @@
 namespace SpryPhp\Provider;
 
 use Exception;
-use SpryPhp\Provider\Alerts;
 use SpryPhp\Provider\Request;
 use SpryPhp\Provider\Route;
 
@@ -19,8 +18,8 @@ class Functions
     /**
      * Prettify Error Messages and Stack Traces.
      *
-     * @param string|array $errors
-     * @param string       $trace
+     * @param mixed  $errors
+     * @param string $trace
      *
      * @uses APP_DEBUG
      * @uses APP_PATH
@@ -36,8 +35,6 @@ class Functions
         $data = ob_get_contents();
         ob_end_clean();
 
-
-        // $data = str_replace("]=>\n", '] => ', $data);
         $data = preg_replace('/]=>\n[\ ]*/', '] => ', $data);
         $data = preg_replace('/bool\((false|true)\)/', '{{bool:}} $1', $data);
         $data = preg_replace('/int\(([0-9]*)\)/', '{{int:}} $1', $data);
@@ -57,7 +54,6 @@ class Functions
         if (defined('APP_PATH')) {
             $data = str_replace(constant('APP_PATH'), '', $data);
         }
-
         echo $data;
 
         if (!$trace) {
@@ -71,10 +67,9 @@ class Functions
             echo "\n";
             echo '<span style="color:#794111;">';
             if (defined('APP_PATH')) {
-                echo str_replace(constant('APP_PATH'), '', $trace);
-            } else {
-                echo $trace;
+                $trace = str_replace(constant('APP_PATH'), '', $trace);
             }
+            echo $trace;
             echo '</span>';
         }
         echo '</pre></div></div>';
@@ -104,7 +99,10 @@ class Functions
         $trace = ob_get_contents();
         ob_end_clean();
 
-        self::displayError($value, '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace);
+        self::displayError(
+            $value,
+            '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace
+        );
     }
 
     /**
@@ -115,7 +113,7 @@ class Functions
      *
      * @return void
      */
-    public static function dd(mixed $value, mixed ...$values): void
+    public static function dd(mixed $value, mixed ...$values): never
     {
         if (!empty($values)) {
             $value = [
@@ -131,7 +129,10 @@ class Functions
         $trace = ob_get_contents();
         ob_end_clean();
 
-        self::displayError($value, '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace);
+        self::displayError(
+            $value,
+            '<span style="color: #006499">in '.$traceArray[0]['file'].':'.$traceArray[0]['line']."</span>\n\n".$trace
+        );
         exit;
     }
 
@@ -143,7 +144,10 @@ class Functions
     public static function formatExceptions(): void
     {
         set_exception_handler(function (\Throwable $exception) {
-            self::displayError('<b>Uncaught Exception</b>: '.$exception->getMessage(), '<span style="color: #006499">in '.$exception->getFile().':'.$exception->getLine()."</span>\n\n".$exception->getTraceAsString());
+            self::displayError(
+                '<b>Uncaught Exception</b>: '.$exception->getMessage(),
+                '<span style="color: #006499">in '.$exception->getFile().':'.$exception->getLine()."</span>\n\n".$exception->getTraceAsString()
+            );
         });
     }
 
@@ -225,7 +229,7 @@ class Functions
     public static function abort(string $error): void
     {
         if ($error) {
-            Alerts::set('error', $error);
+            Session::addAlert('error', $error);
             if (!defined('APP_URI_LOGIN')) {
                 throw new Exception("SpryPHP: APP_URI_LOGIN is not defined");
             }
@@ -259,23 +263,23 @@ class Functions
     /**
      * Safe Value
      *
-     * @param string $value
+     * @param string|int|float|bool|null $value
      *
      * @return string
      */
-    public static function escString(string $value): string
+    public static function escString(string|int|float|bool|null $value): string
     {
-        return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
+        return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags(strval($value))), ENT_NOQUOTES, "UTF-8", false)));
     }
 
     /**
      * Convert Value for HTML Attribute
      *
-     * @param mixed $value
+     * @param string|int|float|bool|null $value
      *
      * @return string
      */
-    public static function escAttr(mixed $value): string
+    public static function escAttr(string|int|float|bool|null $value): string
     {
         return str_replace("'", "&#39;", stripslashes(strval($value)));
     }
@@ -283,18 +287,17 @@ class Functions
     /**
      * Convert to CamelCase
      *
-     * @param string $data
+     * @param string $string
      *
      * @return string
      */
-    public static function formatCamelCase(string $data): string
+    public static function formatCamelCase(string $string): string
     {
-        if (!is_string($data)) {
-            return $data;
+        if (!is_string($string)) {
+            return $string;
         }
 
-        $str = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $data)));
-        $str[0] = strtolower($str[0]);
+        $str = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', trim($string)))));
 
         return $str;
     }
@@ -302,17 +305,17 @@ class Functions
     /**
      * Converts Keys to SnakeCase
      *
-     * @param string $data
+     * @param string $string
      *
      * @return string
      */
-    public static function formatSnakeCase(string $data): string
+    public static function formatSnakeCase(string $string): string
     {
-        if (!is_string($data)) {
-            return $data;
+        if (!is_string($string)) {
+            return $string;
         }
 
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $data));
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', trim($string)));
     }
 
     /**
@@ -322,7 +325,7 @@ class Functions
      *
      * @return string
      */
-    public static function formatSingular($string)
+    public static function formatSingular(string $string): string
     {
         if (!$string || !is_string($string) || !trim($string) || stripos(substr(trim($string), -1), 's') === false) {
             return $string;
@@ -352,7 +355,7 @@ class Functions
      *
      * @return string
      */
-    public static function formatPlural($string)
+    public static function formatPlural(string $string): string
     {
         if (!$string || !is_string($string) || !trim($string) || stripos(substr(trim($string), -1), 's') !== false) {
             return $string;

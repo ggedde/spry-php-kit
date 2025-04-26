@@ -20,7 +20,7 @@ class Commands
      *
      * @return void
      */
-    public static function runCommands(): void
+    public static function run(): never
     {
         $commands = [
             'model' => 'makeModel',
@@ -35,13 +35,15 @@ class Commands
             'p' => 'makeProvider',
             'type' => 'makeType',
             't' => 'makeType',
-            // 'component' => 'makeComponent',
-            // 'comp' => 'makeComponent',
+            'update' => 'updateDbSchema',
+            'u' => 'updateDbSchema',
             'help' => 'showHelp',
             'h' => 'showHelp',
         ];
 
-        $command = isset($_SERVER['argv'][1]) && !empty($commands[$_SERVER['argv'][1]]) ? $commands[$_SERVER['argv'][1]] : null;
+        $argv = !empty($_SERVER['argv']) ? array_map('trim', $_SERVER['argv']) : [];
+
+        $command = isset($argv[1]) && !empty($commands[$argv[1]]) ? strtolower($commands[$argv[1]]) : null;
 
         if (!$command) {
             throw new Exception("\n\e[91mSpryPhp: Missing Command. Try spryphp help");
@@ -56,42 +58,51 @@ class Commands
             exit;
         }
 
-        $value = isset($_SERVER['argv'][2]) ? Functions::formatCamelCase($_SERVER['argv'][2]) : null;
-        $options = [];
+        $value = isset($argv[2]) ? Functions::formatCamelCase($argv[2]) : null;
+
+        $options = (object) [];
+
+        if (in_array('-db', array_map('strtolower', $argv), true) || in_array('--database', array_map('strtolower', $argv), true)) {
+            $options->database = true;
+        }
 
         self::$command($value, $options);
+        exit;
     }
 
     /**
      * Make a Controller And Model
      *
-     * @param string $name Name of Controller and Model. Controller Plural Name and Model gets Singular Name.
+     * @param string $name    Name of Controller and Model. Controller Plural Name and Model gets Singular Name.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeControllerAndModel(string $name): void
+    private static function makeControllerAndModel(string $name, object $options): void
     {
-        self::makeModel($name, true);
-        self::makeController($name, $name);
+        self::makeModel($name, $options);
+
+        $options->makeModel = true;
+        self::makeController($name, $options);
     }
 
     /**
      * Make a Controller
      *
-     * @param string $name      Name of Controller. Gets Plural Name.
-     * @param string $modelName Name of Model. Gets Singular Name.
+     * @param string $name    Name of Controller. Gets Plural Name.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeController(string $name, string $modelName = ''): void
+    private static function makeController(string $name, object $options): void
     {
         $controllerName = ucwords(Functions::formatCamelCase(Functions::formatPlural($name)));
 
-        if (!defined('APP_PATH_APP') || !is_dir(constant('APP_PATH_APP'))) {
+        if (!is_dir(constant('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
 
@@ -107,95 +118,99 @@ class Commands
             throw new Exception("\n\e[91mSpryPhp: Controller already exists");
         }
 
-        if ($modelName) {
-            $modelName = ucwords(Functions::formatCamelCase(Functions::formatSingular($modelName)));
-            $contents = '<?php declare(strict_types=1);
+        $database = !empty($options->database);
+        $modelName = '';
+        if (!empty($options->makeModel)) {
+            $modelName = ucwords(Functions::formatCamelCase(Functions::formatSingular($controllerName)));
+        }
+
+        $contents = '<?php declare(strict_types=1);
 /**
  * This file is to handle The '.$controllerName.' Controller
  */
 
 namespace App\Controller;
 
-use App\Model\\'.$modelName.';
-use SpryPhp\Provider\Db;
-
+'.($modelName ? 'use App\Model\\'.$modelName.';
+' : '').($database ? 'use SpryPhp\Provider\Db;
+' : '').'
 /**
  * '.$controllerName.' Controller
  */
 class '.$controllerName.'
-{
-	/**
-	 * Get '.$controllerName.' or single '.$modelName.' if WHERE has id.
+{'.($database ? '
+    /**
+	 * Database Table
 	 *
-	 * @param array $columns
-	 * @param array $where
-	 * @param array $order
-	 * @param array $limit
-	 *
-	 * @return '.$modelName.'|'.$modelName.'[]
+	 * @var string $dbTable
 	 */
-	public static function get(array $columns = [\'*\'], array $where = [], array $order = [], array $limit = []): '.$modelName.'|array
+	private static $dbTable = \''.strtolower($controllerName).'\';' : '').'
+
+	/**
+	 * Get '.$controllerName.($database ? ' or single '.($modelName ? $modelName.' ' : '').'if WHERE has id.' : '').($database ? '
+	 *
+	 * @param array $columns' : '
+     *').'
+	 * @param array $where'.($database ? '
+	 * @param array $order
+	 * @param array $limit' : '').'
+	 *
+	 * @return '.($modelName ? $modelName.'|'.$modelName.'[]' : 'array').'
+	 */
+	public static function get('.($database ? 'array $columns = [\'*\'], ' : '').'array $where = []'.($database ? ', array $order = [], array $limit = []' : '').'): '.($modelName ? $modelName : 'object').'|array
 	{
 		if (!empty($where[\'id\'])) {
-			if ($item = new '.$modelName.'($where[\'id\'])) {
+            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get(self::$dbTable, null, $where)' : '(object) [\'id\' => \'\']')).';
+			if ($item) {
 				return $item;
 			}
 		}
 
-		$items = [];
-		foreach (Db::select(\'submissions\', $columns, null, $where, [], $order, $limit) as $item) {
-			$items[] = new '.$modelName.'($item);
-		}
+		$items = [];'.($database ? '
+		foreach (Db::select(self::$dbTable, $columns, null, $where, [], $order, $limit) as $item) {
+			$items[] = '.($modelName ? 'new '.$modelName.'($item)' : '$item').';
+		}' : '').'
 
 		return $items;
-	}
+	}'.($database ? '
 
-	/**
-	 * Add '.$modelName.' Function
+    /**
+	 * Add '.$controllerName.'
 	 *
 	 * @param string $name
 	 *
 	 * @return '.$modelName.'|null
 	 */
-	public static function add(string $name): ?'.$modelName.'
+	public static function add(string $name): ?'.($modelName ? $modelName : 'object').'
 	{
-		$item = new '.$modelName.'(
+		$item = '.($modelName ? 'new '.$modelName.'(
 			(object) [
 				\'name\' => $name,
 			]
-		);
+		)' : '(object) [
+			\'name\' => $name,
+		]').';
 
-		return $item->insert() ? $item : null;
-	}
-}
-';
-        } else {
-            $contents = '<?php declare(strict_types=1);
-/**
- * This file is to handle The '.$controllerName.' Controller
- */
+        $insert = '.($modelName ? '$item->insert()' : 'Db::insert(self::$dbTable, $item)').' ? true : null;
 
-namespace App\Controller;
+		return $insert;
+	}' : '').($database ? '
 
-use SpryPhp\Provider\Db;
-
-/**
- * '.$controllerName.' Controller
- */
-class '.$controllerName.'
-{
-	/**
-	 * Get '.$controllerName.'.
+    /**
+	 * Delete Single '.$controllerName.' by ID
 	 *
-	 * @return array
+	 * @param string $id
+	 *
+	 * @return bool|null
 	 */
-	public static function get(): array
+	public static function delete(string $id): ?bool
 	{
-		return [];
-	}
+        $delete = '.($modelName ? '(new '.$modelName.'($id))->delete()' : 'Db::delete(self::$dbTable, [\'id\' => $id])').' ? true : null;
+
+		return $delete;
+	}' : '').'
 }
 ';
-        }
 
         file_put_contents(constant('APP_PATH_APP').'/Controller/'.$controllerName.'.php', $contents);
         echo "\n\e[92mController Created Successfully!\n";
@@ -204,18 +219,18 @@ class '.$controllerName.'
     /**
      * Make a Model
      *
-     * @param string $name   Name of Model. Gets Singular Name.
-     * @param string $withDb With DB Connection.
+     * @param string $name    Name of Model. Gets Singular Name.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeModel(string $name, $withDb = false): void
+    private static function makeModel(string $name, object $options): void
     {
         $modelName = ucwords(Functions::formatCamelCase(Functions::formatSingular($name)));
 
-        if (!defined('APP_PATH_APP') || !is_dir(constant('APP_PATH_APP'))) {
+        if (!is_dir(constant('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
 
@@ -236,7 +251,7 @@ class '.$controllerName.'
  * This file is to handle The '.$modelName.' Class
  */
 
-namespace App\Model;'.($withDb ? '
+namespace App\Model;'.(!empty($options->database) ? '
 
 use SpryPhp\Model\DbItem;
 ' : '
@@ -244,7 +259,7 @@ use SpryPhp\Model\DbItem;
 /**
  * '.$modelName.' Instance
  */
-class '.$modelName.($withDb ? ' extends DbItem' : '').'
+class '.$modelName.(!empty($options->database) ? ' extends DbItem' : '').'
 {
 	/**
 	 * '.$modelName.' Name
@@ -252,24 +267,24 @@ class '.$modelName.($withDb ? ' extends DbItem' : '').'
 	 * @var string $name
 	 */
 	public string $name = \'\';
-'.($withDb ? '
+'.(!empty($options->database) ? '
     /**
 	 * Database Table
 	 *
 	 * @var string $dbTable
 	 */
-	protected string $dbTable = \''.strtolower($modelName).'\';
+	protected string $dbTable = \''.strtolower(Functions::formatPlural($modelName)).'\';
 ' : '').'
 	/**
      * Construct the '.$modelName.'
-     '.($withDb ? '* Either pass data as object or UUID.' : '*').'
-     *
-     * @param object|string $obj - Data Object'.($withDb ? ' or UUID as string' : '').'
+     '.(!empty($options->database) ? '* Either pass data as object or UUID.
+     *' : '*').'
+     * @param object|string $obj - Data Object'.(!empty($options->database) ? ' or UUID as string' : '').'
      */
     public function __construct(object|string $obj)
-    {'.($withDb ? '
+    {'.(!empty($options->database) ? '
         parent::__construct($obj);' : '
-').'
+        // Do Something').'
     }
 }
 ';
@@ -281,20 +296,23 @@ class '.$modelName.($withDb ? ' extends DbItem' : '').'
     /**
      * Make a Model
      *
-     * @param string $name Name of Model. Gets Singular Name.
+     * @param string $name    Name of Model. Gets Singular Name.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeView(string $name): void
+    private static function makeView(string $name, object $options): void
     {
+
+
         $viewPathName = ucwords(Functions::formatCamelCase($name));
         $viewPathName = str_replace(' ', '/', ucwords(str_replace('/', ' ', $viewPathName)));
 
         $viewBaseName = ucwords(Functions::formatCamelCase(basename($name)));
 
-        if (!defined('APP_PATH_APP') || !is_dir(constant('APP_PATH_APP'))) {
+        if (!is_dir(constant('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
 
@@ -304,6 +322,23 @@ class '.$modelName.($withDb ? ' extends DbItem' : '').'
 
         if (!is_dir(constant('APP_PATH_APP').'/View')) {
             throw new Exception("\n\e[91mSpryPhp: Could Not Create View Directory");
+        }
+
+        $paths = explode('/', $viewPathName);
+        if (count($paths) > 1) {
+            $fullViewPath = '';
+            foreach ($paths as $pathIndex => $path) {
+                if ($pathIndex < (count($paths) - 1)) {
+                    $fullViewPath .= '/'.ucwords($path);
+                    if (!is_dir(constant('APP_PATH_APP').'/View'.$fullViewPath)) {
+                        mkdir(constant('APP_PATH_APP').'/View'.$fullViewPath);
+                    }
+
+                    if (!is_dir(constant('APP_PATH_APP').'/View'.$fullViewPath)) {
+                        throw new Exception("\n\e[91mSpryPhp: Could Not Create View Directory");
+                    }
+                }
+            }
         }
 
         if (file_exists(constant('APP_PATH_APP').'/View/'.$viewPathName.'.php')) {
@@ -343,17 +378,18 @@ class '.$viewBaseName.' extends View
     /**
      * Make a Type
      *
-     * @param string $name Name of Type.
+     * @param string $name    Name of Type.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeType(string $name): void
+    private static function makeType(string $name, object $options): void
     {
         $typeName = ucwords(Functions::formatCamelCase($name));
 
-        if (!defined('APP_PATH_APP') || !is_dir(constant('APP_PATH_APP'))) {
+        if (!is_dir(constant('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
 
@@ -369,7 +405,7 @@ class '.$viewBaseName.' extends View
             throw new Exception("\n\e[91mSpryPhp: Type already exists");
         }
 
-        $contents = '<?php declare(strict_types = 1);
+        $contents = '<?php declare(strict_types=1);
 /**
  * This file is to handle '.$typeName.' Types
  */
@@ -393,17 +429,18 @@ enum '.$typeName.': string
     /**
      * Make a Provider
      *
-     * @param string $name Name of Provider.
+     * @param string $name    Name of Provider.
+     * @param object $options Additional Options.
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function makeProvider(string $name): void
+    private static function makeProvider(string $name, object $options): void
     {
         $providerName = ucwords(Functions::formatCamelCase($name));
 
-        if (!defined('APP_PATH_APP') || !is_dir(constant('APP_PATH_APP'))) {
+        if (!is_dir(constant('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
 
@@ -419,7 +456,7 @@ enum '.$typeName.': string
             throw new Exception("\n\e[91mSpryPhp: Provider already exists");
         }
 
-        $contents = '<?php declare(strict_types = 1);
+        $contents = '<?php declare(strict_types=1);
 /**
  * This file is to handle the '.$providerName.' Provider
  */
@@ -448,23 +485,53 @@ class '.$providerName.'
     }
 
     /**
-     * Show Help
+     * Returns the Plural version of the string.
      *
      * @throws Exception
      *
-     * @access private
+     * @return string
+     */
+    private static function updateDbSchema(): void
+    {
+        if (!defined('APP_PATH_DB_SCHEMA_FILE') || empty(constant('APP_PATH_DB_SCHEMA_FILE'))) {
+            throw new Exception("\n\e[91mSpryPhp: Constant APP_PATH_DB_SCHEMA_FILE does not exist.");
+        }
+        Db::updateSchema(constant('APP_PATH_DB_SCHEMA_FILE'), true);
+        echo "\n\e[92mDatabase Schema Updated Successfully!\n";
+    }
+
+    /**
+     * Show Help
+     *
+     * @throws Exception
      *
      * @return void
      */
     private static function showHelp(): void
     {
-        echo "\n\e[90mSpryPhp Commands:\n\t
-        controller | c [controllerName]\n\t
-        model | m [modelName]\n\t
-        mc [modelAndControllerName]\n\t
-        view | v [viewName]\n\t
-        type | t [typeName]\n\t
-        provider | p [providerName]\n\t
-        ";
+        echo "\n\e[90mSpryPhp Commands:\n\n\t
+    MAKE NEW CONTROLLER\n
+        c, controller [name] [options]\n\t
+        OPTIONS\n\t
+            -db, --database\n\n\t
+    MAKE NEW MODEL\n
+        m, model [name] [options]\n\t
+        OPTIONS\n\t
+            -db, --database\n\n\t
+    MAKE NEW MODEL AND CONTROLLER\n
+        mc [name] [options]\n\t
+        OPTIONS\n\t
+            -db, --database\n\n\t
+    MAKE NEW VIEW\n
+        v, view [name]\n\n\t
+    MAKE NEW TYPE\n
+        t, type [name]\n\n\t
+    MAKE NEW PROVIDER\n
+        p, provider [name]\n\n
+    EXAMPLE USAGES:\n
+        php spry controller Users
+        php spry model User
+        php spry mc Users
+        php spry view User/AddUser\n\n";
     }
 }

@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle Sessions
  */
@@ -107,10 +107,16 @@ class Session
      *
      * @param string $key Name of the Value to retrieve.
      *
+     * @throws Exception
+     *
      * @return string|null
      */
     public static function get(string $key): ?string
     {
+        if (empty($key)) {
+            throw new Exception('SpryPHP: Key must not be empty when getting a Session value.');
+        }
+
         return $_SESSION[$key] ?? null;
     }
 
@@ -122,9 +128,9 @@ class Session
      *
      * @throws Exception
      *
-     * @return void
+     * @return bool
      */
-    public static function set(string $key, mixed $value): void
+    public static function set(string $key, mixed $value): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. Setting a Session value must be done before any other headers are sent.');
@@ -134,9 +140,15 @@ class Session
             throw new Exception('SpryPHP: Session must be started before you can set any session data.');
         }
 
+        if (empty($key)) {
+            throw new Exception('SpryPHP: Key must not be empty when setting a Session value.');
+        }
+
         session_start();
         $_SESSION[$key] = $value;
         session_write_close();
+
+        return $_SESSION[$key] === $value;
     }
 
     /**
@@ -146,18 +158,24 @@ class Session
      *
      * @throws Exception
      *
-     * @return void
+     * @return bool
      */
-    public static function delete(string $key): void
+    public static function delete(string $key): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. Deleting a Session value must be done before any other headers are sent.');
+        }
+
+        if (empty($key)) {
+            throw new Exception('SpryPHP: Key must not be empty when deleting from Session.');
         }
 
         session_start();
         $_SESSION[$key] = null;
         unset($_SESSION[$key]);
         session_write_close();
+
+        return !isset($_SESSION[$key]);
     }
 
     /**
@@ -165,12 +183,13 @@ class Session
      *
      * @return bool
      */
-    public static function destroy()
+    public static function destroy(): bool
     {
         self::$id   = null;
         self::$user = null;
         self::$alerts = [];
-        session_destroy();
+
+        return session_destroy();
     }
 
     /**
@@ -229,12 +248,16 @@ class Session
      *
      * @throws Exception
      *
-     * @return void
+     * @return bool
      */
-    public static function addAlert(string $type, string $message): void
+    public static function addAlert(string $type, string $message): bool
     {
         if (headers_sent()) {
             throw new Exception(sprintf('SpryPHP: Headers Already Sent. Alerts must be added before any other headers have been sent. Alert: %s', $message));
+        }
+
+        if (empty($type) || empty($message)) {
+            throw new Exception('SpryPHP: Alert missing type or message.');
         }
 
         $hasAlert = false;
@@ -249,7 +272,7 @@ class Session
             self::$alerts[] = new Alert($type, $message);
         }
 
-        self::set(self::$alertsKey, self::$alerts);
+        return self::set(self::$alertsKey, self::$alerts);
     }
 
     /**
@@ -257,16 +280,17 @@ class Session
      *
      * @throws Exception
      *
-     * @return void
+     * @return bool
      */
-    public static function clearAlerts(): void
+    public static function clearAlerts(): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. Alerts must be cleared before any other headers have been sent.');
         }
 
         self::$alerts = [];
-        self::set(self::$alertsKey, self::$alerts);
+
+        return self::set(self::$alertsKey, self::$alerts);
     }
 
     /**
@@ -278,12 +302,16 @@ class Session
      *
      * @throws Exception
      *
-     * @return void
+     * @return bool
      */
-    public static function loginUser(object $user): void
+    public static function loginUser(object $user): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. loginUser must be called before any other headers are sent.');
+        }
+
+        if (!defined('APP_SESSION_LOGGED_IN_COOKIE_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_LOGGED_IN_COOKIE_NAME is not defined.");
         }
 
         self::$user = $user;
@@ -300,16 +328,24 @@ class Session
 
         setcookie(constant('APP_SESSION_LOGGED_IN_COOKIE_NAME'), '1', $cookieOptions);
         $_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')] = '1';
+
+        return self::isUserLoggedIn();
     }
 
     /**
      * Check if User is Logged In
      *
+     * @throws Exception
+     *
      * @return bool
      */
     public static function isUserLoggedIn(): bool
     {
-        return !empty(self::$user);
+        if (!defined('APP_SESSION_LOGGED_IN_COOKIE_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_LOGGED_IN_COOKIE_NAME is not defined.");
+        }
+
+        return !empty(self::$user) && !empty($_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')]);
     }
 
     /**
@@ -321,7 +357,7 @@ class Session
      *
      * @return bool
      */
-    public static function logoutUser(): void
+    public static function logoutUser(): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. loginUser must be called before any other headers are sent.');
@@ -345,5 +381,7 @@ class Session
 
         setcookie(constant('APP_SESSION_LOGGED_IN_COOKIE_NAME'), '', $cookieOptions);
         unset($_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')]);
+
+        return !self::isUserLoggedIn();
     }
 }

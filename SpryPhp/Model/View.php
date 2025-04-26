@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 /**
  * This file is to handle a View Template
  */
@@ -19,7 +19,7 @@ class View
      *
      * @return void
      */
-    public function render()
+    public function render(): void
     {
         throw new Exception('SpryPHP: Missing View File or No View Render Method Set.');
     }
