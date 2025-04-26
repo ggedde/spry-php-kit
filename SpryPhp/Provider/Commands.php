@@ -496,8 +496,19 @@ class '.$providerName.'
         if (!defined('APP_PATH_DB_SCHEMA_FILE') || empty(constant('APP_PATH_DB_SCHEMA_FILE'))) {
             throw new Exception("\n\e[91mSpryPhp: Constant APP_PATH_DB_SCHEMA_FILE does not exist.");
         }
-        Db::updateSchema(constant('APP_PATH_DB_SCHEMA_FILE'), true);
-        echo "\n\e[92mDatabase Schema Updated Successfully!\n";
+
+        $changes = Db::updateSchema(constant('APP_PATH_DB_SCHEMA_FILE'), true);
+        if ($changes) {
+            echo "\n";
+            foreach ($changes as $change) {
+                echo $change."\n";
+            }
+            echo "\n\e[92mDatabase Schema Updated Successfully!\n";
+
+            return;
+        }
+
+        echo "\n\e[92mDatabase Schema is up to date!\n";
     }
 
     /**
