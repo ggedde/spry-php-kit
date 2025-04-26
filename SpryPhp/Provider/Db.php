@@ -562,6 +562,10 @@ class Db
         }
 
         foreach ($schema as $table => $columns) {
+            if (empty($table) || !is_string($table)) {
+                throw new Exception(sprintf("SpryPHP: DB Schema File is Not Formatted Correctly: (%s) Invalid Table Name.", $schemaFile));
+            }
+
             if (!in_array($table, self::tables(), true)) {
                 $sql = 'CREATE TABLE '.self::key($table).' (id VARCHAR(36) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id))';
                 if (!self::query($sql)) {

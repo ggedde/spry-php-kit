@@ -539,6 +539,8 @@ class '.$providerName.'
         t, type [name]\n\n\t
     MAKE NEW PROVIDER\n
         p, provider [name]\n\n
+    UPDATE DB SCHEMA  -  !!! WARNING: Use at your own risk. Make sure to backup your database before you run this command, as it can be DESTRUCTIVE!\n
+        u, update\n\n
     EXAMPLE USAGES:\n
         php spry controller Users
         php spry model User
