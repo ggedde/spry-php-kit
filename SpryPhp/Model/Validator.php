@@ -6,7 +6,6 @@
 namespace SpryPhp\Model;
 
 use Exception;
-use SpryPhp\Provider\Alerts;
 
 /**
  * Class for Validator
@@ -33,6 +32,13 @@ class Validator
      * @var array $invalidParams
      */
     private array $invalidParams = [];
+
+    /**
+     * Store Errors
+     *
+     * @var array $errors
+     */
+    private array $errors = [];
 
     /**
      * Current Param to check against
@@ -104,7 +110,7 @@ class Validator
     {
         $param = $this->param;
         if (empty($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is required');
+            $this->addError('Parameter ('.$this->paramLabel.') is required');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -175,7 +181,7 @@ class Validator
             try {
                 $this->validParams->$param = vsprintf('(%s) %s-%s%s', str_split($phone, 3)).(!empty($splitExtension[1]) ? ' #'.$splitExtension[1] : '');
             } catch (\ValueError $e) {
-                Alerts::set('error', 'Parameter ('.$this->paramLabel.') is invalid and could not be converted to Phone Number.');
+                $this->addError('Parameter ('.$this->paramLabel.') is invalid and could not be converted to Phone Number.');
                 $this->valid = false;
                 $this->invalidParams[] = $param;
             }
@@ -203,7 +209,7 @@ class Validator
             try {
                 $this->validParams->$param = ($code ? '+'.$code.' ' : '').vsprintf('(%s) %s-%s%s', str_split($phone, 3)).(!empty($splitExtension[1]) ? ' #'.$splitExtension[1] : '');
             } catch (\ValueError $e) {
-                Alerts::set('error', 'Parameter ('.$this->paramLabel.') is invalid and could not be converted to International Phone Number.');
+                $this->addError('Parameter ('.$this->paramLabel.') is invalid and could not be converted to International Phone Number.');
                 $this->valid = false;
                 $this->invalidParams[] = $param;
             }
@@ -347,7 +353,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_string($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be a String');
+            $this->addError('Parameter ('.$this->paramLabel.') must be a String');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -364,7 +370,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_int($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be an Integer');
+            $this->addError('Parameter ('.$this->paramLabel.') must be an Integer');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -381,7 +387,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_float($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be a Float');
+            $this->addError('Parameter ('.$this->paramLabel.') must be a Float');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -398,7 +404,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_numeric($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be a Number');
+            $this->addError('Parameter ('.$this->paramLabel.') must be a Number');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -415,7 +421,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_bool($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be a Boolean');
+            $this->addError('Parameter ('.$this->paramLabel.') must be a Boolean');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -432,7 +438,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_array($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be an Array');
+            $this->addError('Parameter ('.$this->paramLabel.') must be an Array');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -449,7 +455,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !is_array($this->validParams->$param) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be an Object');
+            $this->addError('Parameter ('.$this->paramLabel.') must be an Object');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -466,7 +472,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $this->validParams->$param))) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Database UUID');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Database UUID');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -483,7 +489,7 @@ class Validator
     {
         $param = $this->param;
         if (!filter_var($this->validParams->$param, FILTER_VALIDATE_EMAIL) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Email Address');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Email Address');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -510,7 +516,7 @@ class Validator
         };
 
         if (($inValid || strlen($phone) < 10) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Phone Number');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Phone Number');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -527,7 +533,7 @@ class Validator
     {
         $param = $this->param;
         if (!filter_var($this->validParams->$param, FILTER_VALIDATE_IP) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid IP Address');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid IP Address');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -544,7 +550,7 @@ class Validator
     {
         $param = $this->param;
         if (!filter_var($this->validParams->$param, FILTER_VALIDATE_URL) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid URL Address');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid URL Address');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -561,7 +567,7 @@ class Validator
     {
         $param = $this->param;
         if (!filter_var($this->validParams->$param, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Domain Address');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Domain Address');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -580,7 +586,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && $this->validParams->$param !== $value && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not the same as '.(is_string($value) || is_numeric($value) || is_bool($value) ? strval($value) : ' required value'));
+            $this->addError('Parameter ('.$this->paramLabel.') is not the same as '.(is_string($value) || is_numeric($value) || is_bool($value) ? strval($value) : ' required value'));
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -599,7 +605,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($this->validParams->$param, $array, true) && !in_array($param, $this->invalidParams, true)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be one of: '.implode(', ', $array));
+            $this->addError('Parameter ('.$this->paramLabel.') must be one of: '.implode(', ', $array));
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -618,7 +624,7 @@ class Validator
     {
         $param = $this->param;
         if (!empty($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || strlen($this->validParams->$param) < $length)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be at least '.$length.' characters long');
+            $this->addError('Parameter ('.$this->paramLabel.') must be at least '.$length.' characters long');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -637,7 +643,7 @@ class Validator
     {
         $param = $this->param;
         if (!empty($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || strlen($this->validParams->$param) > $length)) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be at least '.$length.' characters long');
+            $this->addError('Parameter ('.$this->paramLabel.') must be at least '.$length.' characters long');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -656,7 +662,7 @@ class Validator
     {
         $param = $this->param;
         if (!empty($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && !is_int($this->validParams->$param) && !is_float($this->validParams->$param) && $this->validParams->$param < $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be greater than or equal to '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') must be greater than or equal to '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -675,7 +681,7 @@ class Validator
     {
         $param = $this->param;
         if (!empty($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && !is_int($this->validParams->$param) && !is_float($this->validParams->$param) && $this->validParams->$param > $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') must be less than or equal to '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') must be less than or equal to '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -692,7 +698,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $this->validParams->$param))) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Date');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Date');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -714,7 +720,7 @@ class Validator
             $this->validParams->$param = gmdate('Y-m-d H:i:s', strtotime($this->validParams->$param));
         }
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}\:[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param))) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Date');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Date');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -731,7 +737,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && (!is_string($this->validParams->$param) || !preg_match('/^[0-9]{2}\:[0-9]{2}\:[0-9]{2}$/', $this->validParams->$param))) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') is not a valid Date');
+            $this->addError('Parameter ('.$this->paramLabel.') is not a valid Date');
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -750,7 +756,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && $this->validParams->$param >= $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') Must be less than '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') Must be less than '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -769,7 +775,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && $this->validParams->$param !== $value && $this->validParams->$param > $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') Must be less than or equal to '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') Must be less than or equal to '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -788,7 +794,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && $this->validParams->$param <= $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') Must be greater than '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') Must be greater than '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -807,7 +813,7 @@ class Validator
     {
         $param = $this->param;
         if (!is_null($this->validParams->$param) && !in_array($param, $this->invalidParams, true) && $this->validParams->$param !== $value && $this->validParams->$param < $value) {
-            Alerts::set('error', 'Parameter ('.$this->paramLabel.') Must be greater than or equal to '.$value);
+            $this->addError('Parameter ('.$this->paramLabel.') Must be greater than or equal to '.$value);
             $this->valid = false;
             $this->invalidParams[] = $param;
         }
@@ -820,7 +826,7 @@ class Validator
      *
      * @return object|null null on failure, valid params on success
      */
-    public function getValid(): ?object
+    public function getValidParams(): ?object
     {
         return $this->valid ? $this->validParams : null;
     }
@@ -830,8 +836,40 @@ class Validator
      *
      * @return array
      */
-    public function getInvalid(): array
+    public function getInvalidParams(): array
     {
         return $this->invalidParams;
+    }
+
+    /**
+     * Returns all Errors
+     *
+     * @return array
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Returns true if all is Valid or false if not.
+     *
+     * @return bool
+     */
+    public function isValid(): bool
+    {
+        return $this->valid;
+    }
+
+    /**
+     * Add Error
+     *
+     * @param string $error Message of Error.
+     *
+     * @return void
+     */
+    private function addError(string $error): void
+    {
+        $this->errors[] = $error;
     }
 }

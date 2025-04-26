@@ -143,7 +143,7 @@ class Request
             parse_str($request['query'], $query);
             if (!empty($query) && is_array($query)) {
                 foreach ($query as $key => $value) {
-                    $key = Functions::convertToCamelCase($key);
+                    $key = Functions::formatCamelCase($key);
                     self::$query->$key = is_array($value) ? (object) array_map('trim', $value) : trim($value);
                 }
             }
@@ -185,7 +185,7 @@ class Request
         self::$params = (object) [];
         if (self::$method === 'POST' && !empty($_POST)) {
             foreach ($_POST as $key => $value) {
-                $key = Functions::convertToCamelCase($key);
+                $key = Functions::formatCamelCase($key);
                 self::$params->$key = is_array($value) ? array_map('trim', $value) : trim($value);
             }
 
@@ -204,7 +204,7 @@ class Request
 
         if (self::$method === 'GET' && !empty($_GET)) {
             foreach ($_GET as $key => $value) {
-                $key = Functions::convertToCamelCase($key);
+                $key = Functions::formatCamelCase($key);
                 self::$params->$key = is_array($value) ? array_map('trim', $value) : trim($value);
             }
         }

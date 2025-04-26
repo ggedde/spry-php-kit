@@ -6,7 +6,7 @@
 namespace SpryPhp\Provider;
 
 use Exception;
-use SpryPhp\Provider\Functions;
+use SpryPhp\Model\Alert;
 
 /**
  * Class for managing Sessions
@@ -28,80 +28,136 @@ class Session
     private static ?object $user = null;
 
     /**
-     * Initiate the Session
+     * User Key
+     *
+     * @var string $userKey
+     */
+    private static string $userKey = '__USER__';
+
+    /**
+     * Session Alerts
+     *
+     * @var Alert[] $alerts
+     */
+    private static array $alerts = [];
+
+    /**
+     * Alerts Key
+     *
+     * @var string $alertsKey
+     */
+    private static string $alertsKey = '__ALERTS__';
+
+    /**
+     * Start the Session
      *
      * @uses APP_SESSION_COOKIE_NAME
-     * @uses APP_SESSION_COOKIE_NAME_ACTIVE
+     * @uses APP_SESSION_LOGGED_IN_COOKIE_NAME
+     * @uses APP_SESSION_TTL
      *
      * @throws Exception
      *
      * @return void
      */
-    public static function setup(): void
+    public static function start(): void
     {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. Session must be started before any other headers are sent.');
+        }
+
         if (!defined('APP_SESSION_COOKIE_NAME')) {
             throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.");
         }
 
-        if (!defined('APP_SESSION_COOKIE_NAME_ACTIVE')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.");
+        if (!defined('APP_SESSION_LOGGED_IN_COOKIE_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_LOGGED_IN_COOKIE_NAME is not defined.");
+        }
+
+        session_start([
+            'name' => strval(constant('APP_SESSION_COOKIE_NAME')),
+            'cookie_httponly' => true,
+            'cookie_lifetime' => intval(constant('APP_SESSION_TTL')),
+            'cookie_samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
+            'cookie_secure' => true,
+            'gc_maxlifetime' => intval(constant('APP_SESSION_TTL')),
+            'referer_check' => $_SERVER['HTTP_HOST'],
+            'use_strict_mode' => true,
+            'read_and_close' => true,
+        ]);
+
+        self::$id = session_id();
+
+        if (!empty($_SESSION[self::$userKey]) && is_object($_SESSION[self::$userKey])) {
+            self::$user = $_SESSION[self::$userKey];
+        }
+
+        if (!empty($_SESSION[self::$alertsKey]) && is_array($_SESSION[self::$alertsKey])) {
+            self::$alerts = $_SESSION[self::$alertsKey];
         }
 
         // Check to see if the Session is still active, but has expired.
-        if (empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) && !empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME_ACTIVE')])) {
-            self::clear();
-            Functions::abort('Your Session has Expired');
-        }
-
-        // Check to see if we already have a session, if so then lets use it.
-        if (isset($_COOKIE[constant('APP_SESSION_COOKIE_NAME')]) && !empty($_COOKIE[constant('APP_SESSION_COOKIE_NAME')])) {
-            self::$id = $_COOKIE[constant('APP_SESSION_COOKIE_NAME')];
-        } else {
-            // If no session, then lets create a new Guest Session.
-            self::$id = self::makeIdFrom(microtime());
-            self::updateCookie(self::$id, self::getTtl(true), true);
+        if (!self::getUser() && !empty($_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')])) {
+            self::logoutUser();
+            self::addAlert('error', 'Your Session has Expired');
         }
     }
 
     /**
-     * Sets the Session Id and User.
+     * Return a Value from the Session by key
      *
-     * @param string      $sessionUniqueString String to construct the Session ID.
-     * @param object|null $sessionUser         Object for User. Use `null` for Guest or Anonymous object for Single User, ex. {name: "Admin"} or {name: "Anonymous"}
-     * @param int|null    $sessionTtl          Session TTL. Uses APP_SESSION_TTL as Default
+     * @param string $key Name of the Value to retrieve.
      *
-     * @uses APP_SESSION_TTL (for Default)
-     *
-     * @return void
+     * @return string|null
      */
-    public static function set(string $sessionUniqueString, ?object $sessionUser = null, ?int $sessionTtl = null)
+    public static function get(string $key): ?string
     {
-        self::$id = self::makeIdFrom($sessionUniqueString);
-        if ($sessionUser) {
-            self::$user = $sessionUser;
-        }
-        self::update($sessionUser, $sessionTtl);
+        return $_SESSION[$key] ?? null;
     }
 
     /**
-     * Update the Session Id and User.
+     * Set a Session value by key
      *
-     * @param object|null $sessionUser Object for User. Use `null` for Guest or Anonymous object for Single User, ex. {name: "Admin"} or {name: "Anonymous"}
-     * @param int|null    $sessionTtl  Session TTL. Uses APP_SESSION_TTL as Default
+     * @param string $key   Name of the Value to set.
+     * @param mixed  $value Value to set.
      *
-     * @uses APP_SESSION_TTL (for Default)
+     * @throws Exception
      *
      * @return void
      */
-    public static function update(?object $sessionUser = null, ?int $sessionTtl = null)
+    public static function set(string $key, mixed $value): void
     {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. Setting a Session value must be done before any other headers are sent.');
+        }
+
         if (!self::$id) {
-            self::$id = self::makeIdFrom(json_encode($sessionUser), strval($sessionTtl));
+            throw new Exception('SpryPHP: Session must be started before you can set any session data.');
         }
-        if ($sessionUser) {
-            self::$user = $sessionUser;
+
+        session_start();
+        $_SESSION[$key] = $value;
+        session_write_close();
+    }
+
+    /**
+     * Delete a Session value by key
+     *
+     * @param string $key Name of the Value to set.
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function delete(string $key): void
+    {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. Deleting a Session value must be done before any other headers are sent.');
         }
-        self::updateCookie(self::$id, is_null($sessionTtl) ? self::getTtl() : intval($sessionTtl));
+
+        session_start();
+        $_SESSION[$key] = null;
+        unset($_SESSION[$key]);
+        session_write_close();
     }
 
     /**
@@ -109,11 +165,12 @@ class Session
      *
      * @return bool
      */
-    public static function clear()
+    public static function destroy()
     {
         self::$id   = null;
         self::$user = null;
-        self::updateCookie();
+        self::$alerts = [];
+        session_destroy();
     }
 
     /**
@@ -137,6 +194,16 @@ class Session
     }
 
     /**
+     * Get Alerts
+     *
+     * @return Alert[]
+     */
+    public static function getAlerts(): array
+    {
+        return self::$alerts;
+    }
+
+    /**
      * Return the csrf token
      *
      * @uses APP_AUTH_KEY
@@ -151,100 +218,132 @@ class Session
             throw new Exception("SpryPHP: APP_AUTH_KEY is not defined");
         }
 
-        return self::$id ? sha1(self::$id) : (constant('APP_AUTH_KEY') ? sha1(constant('APP_AUTH_KEY')) : null);
+        return self::$id ? hash('sha256', self::$id) : (constant('APP_AUTH_KEY') ? hash('sha256', constant('APP_AUTH_KEY')) : null);
     }
 
     /**
-     * Return TTL
+     * Add an Alert
      *
-     * @param bool $guest Whether to get Guest Session TTL
-     *
-     * @uses APP_SESSION_TTL
-     *
-     * @throws Exception
-     *
-     * @return int
-     */
-    public static function getTtl(bool $guest = false): int
-    {
-        if (!defined('APP_SESSION_TTL')) {
-            throw new Exception("SpryPHP: APP_SESSION_TTL is not defined.");
-        }
-
-        if (!defined('APP_SESSION_TTL_GUEST')) {
-            throw new Exception("SpryPHP: APP_SESSION_TTL_GUEST is not defined.");
-        }
-
-        return intval(constant($guest ? 'APP_SESSION_TTL_GUEST' : 'APP_SESSION_TTL'));
-    }
-
-    /**
-     * Makes an Authorized Session ID from user value.
-     *
-     * @param string $sessionUniqueString User provided unique string.
-     *
-     * @uses APP_AUTH_KEY
-     *
-     * @throws Exception
-     *
-     * @return string - sha1() Response
-     */
-    public static function makeIdFrom(string $sessionUniqueString): string
-    {
-        if (!defined('APP_AUTH_KEY')) {
-            throw new Exception("SpryPHP: APP_AUTH_KEY is not defined.");
-        }
-
-        return sha1(constant('APP_AUTH_KEY').$sessionUniqueString);
-    }
-
-    /**
-     * Update Cookie
-     *
-     * @param string $sessionId    Unique ID for Session.
-     * @param int    $sessionTtl   TTL for Session.
-     * @param bool   $sessionGuest Whether the session is a Guest Session.
-     *
-     * @uses APP_SESSION_COOKIE_NAME
-     * @uses APP_SESSION_COOKIE_NAME_ACTIVE
-     * @uses APP_SESSION_COOKIE_HTTP_ONLY
-     * @uses APP_SESSION_COOKIE_SAMESITE
-     * @uses APP_URI
+     * @param string $type    - Type of Alert - error | info | success | warning
+     * @param string $message - Message for Alert
      *
      * @throws Exception
      *
      * @return void
      */
-    private static function updateCookie(string $sessionId = '', int $sessionTtl = 0, bool $sessionGuest = false)
+    public static function addAlert(string $type, string $message): void
     {
-        if (!defined('APP_SESSION_COOKIE_NAME')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME is not defined.");
-        }
-        if (!defined('APP_SESSION_COOKIE_NAME_ACTIVE')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_NAME_ACTIVE is not defined.");
-        }
-        if (!defined('APP_SESSION_COOKIE_HTTP_ONLY')) {
-            throw new Exception("SpryPHP: APP_SESSION_COOKIE_HTTP_ONLY is not defined.");
-        }
-        if (!defined('APP_URI')) {
-            throw new Exception("SpryPHP: APP_URI is not defined.");
+        if (headers_sent()) {
+            throw new Exception(sprintf('SpryPHP: Headers Already Sent. Alerts must be added before any other headers have been sent. Alert: %s', $message));
         }
 
-        $options = [
-            'expires' => $sessionId ? 0 : (time() - 1),
+        $hasAlert = false;
+
+        foreach (self::$alerts as $alert) {
+            if ($type === $alert->type && $message === $alert->message) {
+                $hasAlert = true;
+            }
+        }
+
+        if (!$hasAlert) {
+            self::$alerts[] = new Alert($type, $message);
+        }
+
+        self::set(self::$alertsKey, self::$alerts);
+    }
+
+    /**
+     * Clear All Alerts
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function clearAlerts(): void
+    {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. Alerts must be cleared before any other headers have been sent.');
+        }
+
+        self::$alerts = [];
+        self::set(self::$alertsKey, self::$alerts);
+    }
+
+    /**
+     * Login a User
+     *
+     * @param object $user Object for User. For Anonymous object for Single User, ex. {name: "Admin"} or {name: "Anonymous"}
+     *
+     * @uses APP_SESSION_LOGGED_IN_COOKIE_NAME
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function loginUser(object $user): void
+    {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. loginUser must be called before any other headers are sent.');
+        }
+
+        self::$user = $user;
+        self::set(self::$userKey, $user);
+
+        $cookieOptions = [
+            'expires' => 0,
             'path' => constant('APP_URI'),
             'domain' => $_SERVER['HTTP_HOST'],
             'secure' => true,
-            'httponly' => !empty(constant('APP_SESSION_COOKIE_HTTP_ONLY')), // cspell:disable-line.
+            'httponly' => !empty(constant('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY')),
             'samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
         ];
 
-        if (!$sessionGuest) {
-            setcookie(constant('APP_SESSION_COOKIE_NAME_ACTIVE'), $sessionId ? '1' : '', $options);
-            $_COOKIE[constant('APP_SESSION_COOKIE_NAME_ACTIVE')] = $sessionId ? '1' : '';
+        setcookie(constant('APP_SESSION_LOGGED_IN_COOKIE_NAME'), '1', $cookieOptions);
+        $_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')] = '1';
+    }
+
+    /**
+     * Check if User is Logged In
+     *
+     * @return bool
+     */
+    public static function isUserLoggedIn(): bool
+    {
+        return !empty(self::$user);
+    }
+
+    /**
+     * Check if User is Logged In
+     *
+     * @uses APP_SESSION_LOGGED_IN_COOKIE_NAME
+     *
+     * @throws Exception
+     *
+     * @return bool
+     */
+    public static function logoutUser(): void
+    {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. loginUser must be called before any other headers are sent.');
         }
-        $options['expires'] = $sessionId ? ($sessionTtl ? (time() + intval($sessionTtl)) : 0) : (time() - 1);
-        setcookie(constant('APP_SESSION_COOKIE_NAME'), $sessionId, $options);
-        $_COOKIE[constant('APP_SESSION_COOKIE_NAME')] = $sessionId;
+
+        if (!defined('APP_SESSION_LOGGED_IN_COOKIE_NAME')) {
+            throw new Exception("SpryPHP: APP_SESSION_LOGGED_IN_COOKIE_NAME is not defined.");
+        }
+
+        self::$user = null;
+        self::delete(self::$userKey);
+
+        $cookieOptions = [
+            'expires' => time() - 1,
+            'path' => constant('APP_URI'),
+            'domain' => $_SERVER['HTTP_HOST'],
+            'secure' => true,
+            'httponly' => !empty(constant('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY')),
+            'samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? constant('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
+        ];
+
+        setcookie(constant('APP_SESSION_LOGGED_IN_COOKIE_NAME'), '', $cookieOptions);
+        unset($_COOKIE[constant('APP_SESSION_LOGGED_IN_COOKIE_NAME')]);
     }
 }

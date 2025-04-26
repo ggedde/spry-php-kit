@@ -241,30 +241,6 @@ class Functions
     }
 
     /**
-     * Safe Value
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public static function esc(string $value): string
-    {
-        return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
-    }
-
-    /**
-     * Convert Value for HTML Attribute
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    public static function attr(mixed $value): string
-    {
-        return str_replace("'", "&#39;", stripslashes(strval($value)));
-    }
-
-    /**
      * Sanitize String
      *
      * @param string $string
@@ -281,15 +257,27 @@ class Functions
     }
 
     /**
-     * Format Title
+     * Safe Value
      *
-     * @param string $title
+     * @param string $value
      *
      * @return string
      */
-    public static function formatTitle(string $title): string
+    public static function escString(string $value): string
     {
-        return ucwords(self::sanitizeString(self::convertToSnakeCase($title), ' '));
+        return addslashes(str_replace(['"', '&#039;'], ['&#34;', "'"], htmlspecialchars(stripslashes(strip_tags($value)), ENT_NOQUOTES, "UTF-8", false)));
+    }
+
+    /**
+     * Convert Value for HTML Attribute
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public static function escAttr(mixed $value): string
+    {
+        return str_replace("'", "&#39;", stripslashes(strval($value)));
     }
 
     /**
@@ -299,7 +287,7 @@ class Functions
      *
      * @return string
      */
-    public static function convertToCamelCase(string $data): string
+    public static function formatCamelCase(string $data): string
     {
         if (!is_string($data)) {
             return $data;
@@ -316,17 +304,79 @@ class Functions
      *
      * @param string $data
      *
-     * @access public
-     *
      * @return string
      */
-    public static function convertToSnakeCase(string $data): string
+    public static function formatSnakeCase(string $data): string
     {
         if (!is_string($data)) {
             return $data;
         }
 
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $data));
+    }
+
+    /**
+     * Returns the Singular version of the string.
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public static function formatSingular($string)
+    {
+        if (!$string || !is_string($string) || !trim($string) || stripos(substr(trim($string), -1), 's') === false) {
+            return $string;
+        }
+
+        $string = trim($string);
+
+        if (stripos(substr($string, -3), 'ies') !== false) {
+            return substr($string, 0, -3).(ctype_upper($string) ? 'Y' : 'y');
+        }
+
+        if (stripos(substr($string, -3), 'ses') !== false) {
+            return substr($string, 0, -2);
+        }
+
+        if (stripos(substr($string, -1), 's') !== false) {
+            return substr($string, 0, -1);
+        }
+
+        return $string;
+    }
+
+    /**
+     * Returns the Plural version of the string.
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public static function formatPlural($string)
+    {
+        if (!$string || !is_string($string) || !trim($string) || stripos(substr(trim($string), -1), 's') !== false) {
+            return $string;
+        }
+
+        $string = trim($string);
+
+        if (stripos(substr($string, -1), 'y') !== false) {
+            return substr($string, 0, -1).(ctype_upper($string) ? 'IES' : 'ies');
+        }
+
+        return $string.(ctype_upper($string) ? 'S' : 's');
+    }
+
+    /**
+     * Format Title
+     *
+     * @param string $title
+     *
+     * @return string
+     */
+    public static function formatTitle(string $title): string
+    {
+        return ucwords(self::sanitizeString(self::formatSnakeCase($title), ' '));
     }
 
     /**
