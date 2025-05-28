@@ -10,9 +10,12 @@
     },
     "autoload": {
         "psr-4": {
-            "SpryPhp\\": "SpryPhp/"
+            "SpryPhp\\": "src/"
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
+    }
 }
