@@ -101,8 +101,8 @@ class Commands
     /**
      * Make a Controller And Model
      *
-     * @param string                                     $name    Name of Controller and Model. Controller Plural Name and Model gets Singular Name.
-     * @param object{makeModel:boolean,database:boolean} $options Additional Options.
+     * @param string    $name    Name of Controller and Model. Controller Plural Name and Model gets Singular Name.
+     * @param \stdClass $options Additional Options.
      *
      * @throws Exception
      *
@@ -112,7 +112,7 @@ class Commands
     {
         self::makeModel($name, $options);
 
-        $options->makeModel = true; // @phpstan-ignore assign.propertyReadOnly
+        $options->makeModel = true;
         self::makeController($name, $options);
     }
 

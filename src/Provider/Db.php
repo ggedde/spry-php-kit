@@ -302,8 +302,8 @@ class Db
     /**
      * Insert Data
      *
-     * @param string                                $table
-     * @param object|array<string,string|int|float> $data
+     * @param string                                   $table
+     * @param \stdClass|array<string,string|int|float> $data
      *
      * @return bool
      */
@@ -316,7 +316,7 @@ class Db
 
         // If no ID is passed then lets add one.
         if (!isset($data->id)) {
-            $data->id = Functions::newUuid(); // @phpstan-ignore property.notFound
+            $data->id = Functions::newUuid();
         }
 
         foreach ((array) $data as $key => $value) {
