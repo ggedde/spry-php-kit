@@ -289,7 +289,7 @@ class Request
      */
     public static function getMethod(): string
     {
-        return self::$pathFilters;
+        return self::$method;
     }
 
     /**

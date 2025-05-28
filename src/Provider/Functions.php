@@ -458,7 +458,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? constant($constant) : (!is_null($default) ? $default : null);
+        $value = defined($constant) ? (constant($constant) ?: $default) : $default;
 
         if (!is_string($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a String', $constant));
@@ -483,7 +483,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? constant($constant) : (!is_null($default) ? $default : null);
+        $value = defined($constant) ? constant($constant) : $default;
 
         if (!is_int($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a Integer', $constant));
@@ -508,7 +508,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? constant($constant) : (!is_null($default) ? $default : null);
+        $value = defined($constant) ? constant($constant) : $default;
 
         if (!is_float($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a Float', $constant));
@@ -533,7 +533,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? constant($constant) : (!is_null($default) ? $default : null);
+        $value = defined($constant) ? constant($constant) : $default;
 
         if (!is_bool($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a Boolean', $constant));
@@ -558,7 +558,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? constant($constant) : (!is_null($default) ? $default : null);
+        $value = defined($constant) ? constant($constant) : $default;
 
         if (!is_array($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a Array', $constant));

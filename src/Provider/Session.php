@@ -335,7 +335,7 @@ class Session
             'path' => defined('APP_URI') ? Functions::constantString('APP_URI') : '/',
             'domain' => is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '',
             'secure' => true,
-            'httponly' => !empty(Functions::constantString('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY')),
+            'httponly' => Functions::constantBool('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY'),
             'samesite' => $samesite,
         ];
 
@@ -405,7 +405,7 @@ class Session
             'path' => $appUri,
             'domain' => is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '',
             'secure' => true,
-            'httponly' => !empty(Functions::constantString('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY')),
+            'httponly' => Functions::constantBool('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY'),
             'samesite' => $samesite,
         ];
 
