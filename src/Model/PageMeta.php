@@ -18,6 +18,7 @@ class PageMeta
      * @param bool   $index       Whether to add the follow meta tag
      * @param bool   $follow      Whether to add the follow meta tag
      * @param string $headHtml    Additional Head HTML Code
+     * @param string $footerHtml  Additional Footer HTML Code
      */
     public function __construct(
         public string $title       = '',
@@ -25,6 +26,7 @@ class PageMeta
         public bool   $index       = true,
         public bool   $follow      = true,
         public string $headHtml    = '',
+        public string $footerHtml  = '',
     ) {
         // Do Something
     }

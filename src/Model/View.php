@@ -26,7 +26,8 @@ class View
             description: '',
             index:       true,
             follow:      true,
-            headHtml:    ''
+            headHtml:    '',
+            footerHtml:  ''
         );
     }
 
