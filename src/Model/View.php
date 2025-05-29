@@ -13,6 +13,18 @@ use Exception;
 class View
 {
     /**
+     * Returns the Meta information for the page.
+     *
+     * @throws Exception
+     *
+     * @return PageMeta
+     */
+    public function meta(): PageMeta
+    {
+        throw new Exception('SpryPHP: Missing View File or No View Meta Method Set.');
+    }
+
+    /**
      * Outputs the HTML for the View Item.
      *
      * @throws Exception
