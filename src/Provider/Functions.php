@@ -568,6 +568,24 @@ class Functions
     }
 
     /**
+     * Get the Contents of a Callable Function
+     *
+     * @param callable $func    Callable Function.
+     * @param mixed    ...$args Array of Arguments to pass to the callable Function.
+     *
+     * @return string|null String on Success `null` on get contents failure.
+     */
+    public static function returnContents(callable $func, mixed ...$args): ?string
+    {
+        ob_start();
+        call_user_func($func, ...$args);
+        $contents = ob_get_contents();
+        ob_end_clean();
+
+        return $contents !== false ? $contents : null;
+    }
+
+    /**
      * List of States and abbreviations.
      *
      * @return array<string, string>
