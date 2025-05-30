@@ -312,8 +312,8 @@ class Validator
     /**
      * Convert to Date Value
      *
-     * @param string      $format       Option to set Date Format.
-     * @param string|null $offset       Ex -7 hours | +2 minutes etc
+     * @param string      $format             Option to set Date Format.
+     * @param string|null $offset             Ex -7 hours | +2 minutes etc
      * @param string|null $customErrorMessage Custom Error Message
      *
      * @throws Exception
