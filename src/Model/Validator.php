@@ -932,6 +932,8 @@ class Validator
      */
     private function addError(string $error): void
     {
-        $this->errors[] = $error;
+        if (!empty($error)) {
+            $this->errors[] = $error;
+        }
     }
 }
