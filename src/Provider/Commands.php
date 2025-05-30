@@ -340,6 +340,8 @@ class '.$modelName.(!empty($options->database) ? ' extends DbItem' : '').'
 
         $viewBaseName = ucwords(Functions::formatCamelCase(basename($name)));
 
+        $viewParentName = trim(str_replace($viewBaseName, '', $viewPathName), '/');
+
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
             throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
         }
@@ -378,9 +380,10 @@ class '.$modelName.(!empty($options->database) ? ' extends DbItem' : '').'
  * '.$viewBaseName.' View
  */
 
-namespace App\View\\'.str_replace('/', '\\', $viewPathName).';
+namespace App\View'.($viewParentName ? '\\'.str_replace('/', '\\', $viewParentName) : '').';
 
 use SpryPhp\Model\View;
+use SpryPhp\Model\PageMeta;
 
 /**
  * Class for '.$viewBaseName.' View
@@ -388,9 +391,22 @@ use SpryPhp\Model\View;
 class '.$viewBaseName.' extends View
 {
     /**
+     * Set the Page Meta
+     *
+     * @return PageMeta
+     */
+    public function meta(): PageMeta
+    {
+        return new PageMeta(
+            title:       \''.$viewBaseName.'\',
+            description: \'Welcome to '.$viewBaseName.'\',
+        );
+    }
+
+    /**
      * Render the '.$viewBaseName.' View
      */
-    public function render()
+    public function render(): void
     {
         ?>
             Hello World!
