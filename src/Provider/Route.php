@@ -117,12 +117,21 @@ class Route
     /**
      * Change the Route.
      *
-     * @param string $path
+     * @param string              $path
+     * @param array<string,mixed> $flashStorage Temporary Session Data for next page load.
      *
      * @return never
      */
-    public static function goTo(string $path): never
+    public static function redirect(string $path, array $flashStorage = []): never
     {
+        if (headers_sent()) {
+            throw new Exception('SpryPHP: Headers Already Sent. redirect() must be called before any other headers are sent.');
+        }
+
+        foreach ($flashStorage as $key => $value) {
+            Session::set($key, $value, true);
+        }
+
         header('Location: '.$path);
         exit;
     }

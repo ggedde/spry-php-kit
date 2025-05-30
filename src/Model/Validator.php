@@ -1159,10 +1159,16 @@ class Validator
     /**
      * Returns all the Valid Params or 'null' if one of the fields failed validation.
      *
+     * @param bool $returnAny Return any that have passed even if others have failed. Default is false.
+     *
      * @return object|null null on failure, valid params on success
      */
-    public function getValidParams(): ?object
+    public function getValidParams(bool $returnAny = false): ?object
     {
+        if (!$returnAny && !$this->isValid()) {
+            return null;
+        }
+
         $validParams = [];
         foreach ((array) $this->requestedParams as $key => $value) {
             if (!in_array($key, $this->invalidParams, true)) {

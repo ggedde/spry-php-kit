@@ -275,7 +275,7 @@ class Functions
             $appUriLogout = self::constantString('APP_URI_LOGOUT');
 
             if (!in_array(Request::getPath(), [$appUriLogin, $appUriLogout], true)) {
-                Route::goTo($appUriLogin);
+                Route::redirect($appUriLogin);
             }
         }
     }
@@ -295,7 +295,11 @@ class Functions
             $string = preg_replace('/[_]{2,}/', '_', $string);
         }
 
-        return is_string($string) ? str_replace('_', $space, $string) : '';
+        if (!is_string($string)) {
+            return '';
+        }
+
+        return $space !== '_' ? str_replace('_', $space, $string) : $string;
     }
 
     /**

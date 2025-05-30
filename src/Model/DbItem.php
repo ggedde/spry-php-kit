@@ -6,6 +6,8 @@
 namespace SpryPhp\Model;
 
 use Exception;
+use ReflectionClass;
+use ReflectionProperty;
 use SpryPhp\Provider\Db;
 use SpryPhp\Provider\Functions;
 
@@ -101,18 +103,36 @@ class DbItem
     /**
      * Construct the Obj
      *
-     * @param object|string $obj - Object of Obj
+     * @param object|array<string,mixed>|string|null $obj
+     * - Pass Object to Set Values of DB Item
+     * - Pass Array to use as a Where Clause to Get the Item from the DB
+     * - Pass String to use as the ID to Get the Item from the DB
+     * - Pass NULL to use as an Empty Item as Skeleton
      *
      * @throws Exception
      */
-    public function __construct(object|string $obj)
+    public function __construct(object|array|string|null $obj = null)
     {
+        // Try By ID
         if (is_string($obj) && !empty($obj)) {
             $objId = $obj;
             $obj = Db::get($this->dbTable, ['*'], ['id' => $objId]);
             if (empty($obj)) {
-                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in %s', $objId, ucwords($this->dbTable)));
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in Table: %s', $objId, ucwords($this->dbTable)));
             }
+        }
+
+        // Try Where Clause
+        if (is_array($obj) && !empty($obj)) {
+            $obj = Db::get($this->dbTable, ['*'], $obj); // @phpstan-ignore argument.type
+            if (empty($obj)) {
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item in Table: %s', ucwords($this->dbTable)));
+            }
+        }
+
+        // Create an empty Skeleton Object if Null.
+        if (is_null($obj)) {
+            $obj = (object) [];
         }
 
         if (empty($this->id)) {
@@ -121,33 +141,31 @@ class DbItem
 
         foreach (array_keys((array) $obj) as $key) {
             $camelKey = Functions::formatCamelCase($key);
-            if (in_array($camelKey, array_keys((array) get_object_vars($this)), true)) {
+            if (in_array($camelKey, $this->getFields(), true)) {
                 $this->$camelKey = is_string($obj->$key) ? Functions::escString($obj->$key) : (is_null($obj->$key) ? '' : $obj->$key);
             }
         }
 
-        // Format Other Time Options.
-        $this->createdAt = !empty($this->createdAt) ? $this->createdAt : gmdate('Y-m-d H:i:s');
-        $this->updatedAt = !empty($this->updatedAt) ? $this->updatedAt : gmdate('Y-m-d H:i:s');
-        $this->createdAtFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? Functions::constantString('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime($this->createdAt) ?: null);
-        $this->updatedAtFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? Functions::constantString('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime($this->updatedAt) ?: null);
+        // Create Timestamps.
+        $createdAtTime = strtotime($this->createdAt) ?: null;
+        $updatedAtTime = strtotime($this->updatedAt) ?: null;
+        $dateTimeFormattedFormat = defined('APP_DATETIME_FORMAT') ? Functions::constantString('APP_DATETIME_FORMAT') : 'M j, y g:ia';
 
+        // Create Formatted Options.
+        $this->createdAt          = $this->createdAtLocal = gmdate('Y-m-d H:i:s', $createdAtTime);
+        $this->updatedAt          = $this->updatedAtLocal = gmdate('Y-m-d H:i:s', $updatedAtTime);
+        $this->createdAtFormatted = $this->createdAtLocalFormatted = gmdate($dateTimeFormattedFormat, $createdAtTime);
+        $this->updatedAtFormatted = $this->updatedAtLocalFormatted = gmdate($dateTimeFormattedFormat, $updatedAtTime);
+
+        // Convert to Local Time.
         if (defined('APP_DATETIME_OFFSET')) {
-            $this->createdAtLocal = gmdate('Y-m-d H:i:s', strtotime(Functions::constantString('APP_DATETIME_OFFSET'), strtotime($this->createdAt) ?: null) ?: null);
-            $this->updatedAtLocal = gmdate('Y-m-d H:i:s', strtotime(Functions::constantString('APP_DATETIME_OFFSET'), strtotime($this->updatedAt) ?: null) ?: null);
-            $this->createdAtLocalFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? Functions::constantString('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime(Functions::constantString('APP_DATETIME_OFFSET'), strtotime($this->createdAt) ?: null) ?: null);
-            $this->updatedAtLocalFormatted = gmdate(defined('APP_DATETIME_FORMAT') ? Functions::constantString('APP_DATETIME_FORMAT') : 'M j, y g:ia', strtotime(Functions::constantString('APP_DATETIME_OFFSET'), strtotime($this->updatedAt) ?: null) ?: null);
+            $createdAtTimeLocal            = strtotime(Functions::constantString('APP_DATETIME_OFFSET'), $createdAtTime) ?: null;
+            $updatedAtTimeLocal            = strtotime(Functions::constantString('APP_DATETIME_OFFSET'), $updatedAtTime) ?: null;
+            $this->createdAtLocal          = gmdate('Y-m-d H:i:s', $createdAtTimeLocal);
+            $this->updatedAtLocal          = gmdate('Y-m-d H:i:s', $updatedAtTimeLocal);
+            $this->createdAtLocalFormatted = gmdate($dateTimeFormattedFormat, $createdAtTimeLocal);
+            $this->updatedAtLocalFormatted = gmdate($dateTimeFormattedFormat, $updatedAtTimeLocal);
         }
-    }
-
-    /**
-     * Delete the Item
-     *
-     * @return bool
-     */
-    public function delete(): bool
-    {
-        return Db::delete($this->dbTable, ['id' => $this->id]);
     }
 
     /**
@@ -155,7 +173,7 @@ class DbItem
      *
      * @return object[]
      */
-    public function columns(): array
+    public function getColumns(): array
     {
         $columns = [];
         $result = Db::query('SHOW COLUMNS FROM '.$this->dbTable);
@@ -201,6 +219,44 @@ class DbItem
     }
 
     /**
+     * Get the Table Name
+     *
+     * @return string
+     */
+    public function getTable(): string
+    {
+        return $this->dbTable;
+    }
+
+    /**
+     * Get the Object Variable Names
+     *
+     * @param bool $publicOnly
+     *
+     * @return string[]
+     */
+    public function getFields(bool $publicOnly = true): array
+    {
+        $reflection = new ReflectionClass($this);
+
+        if ($publicOnly) {
+            return array_column($reflection->getProperties(ReflectionProperty::IS_PUBLIC), 'name');
+        }
+
+        return array_column($reflection->getProperties(), 'name');
+    }
+
+    /**
+     * Delete the Item
+     *
+     * @return bool
+     */
+    public function delete(): bool
+    {
+        return Db::delete($this->dbTable, ['id' => $this->id]);
+    }
+
+    /**
      * Insert Data
      *
      * @return bool
@@ -209,9 +265,9 @@ class DbItem
     {
         $dataSet = (object) [];
 
-        $columns = $this->columns();
+        $columns = $this->getColumns();
 
-        foreach (array_keys(get_object_vars($this)) as $key) {
+        foreach ($this->getFields(false) as $key) {
             $snakeKey = Functions::formatSnakeCase($key);
             if (in_array($snakeKey, array_column($columns, 'name'), true) && !in_array($snakeKey, ['created_at', 'updated_at'], true)) {
                 $dataSet->$snakeKey = $this->$key;
@@ -224,12 +280,21 @@ class DbItem
     /**
      * Update Data
      *
-     * @param array<string,string|int|float>|object $data
-     *
      * @return bool
      */
-    public function update(array|object $data): bool
+    public function update(): bool
     {
-        return Db::update($this->dbTable, $data, ['id' => $this->id]);
+        $dataSet = (object) [];
+
+        $columns = $this->getColumns();
+
+        foreach ($this->getFields(false) as $key) {
+            $snakeKey = Functions::formatSnakeCase($key);
+            if (in_array($snakeKey, array_column($columns, 'name'), true) && !in_array($snakeKey, ['id', 'created_at', 'updated_at'], true)) {
+                $dataSet->$snakeKey = $this->$key;
+            }
+        }
+
+        return Db::update($this->dbTable, $dataSet, ['id' => $this->id]);
     }
 }

@@ -49,6 +49,13 @@ class Session
     private static string $alertsKey = '__ALERTS__';
 
     /**
+     * FlashStorage Key
+     *
+     * @var string $flashKey
+     */
+    private static string $flashKey = '__FLASH__::';
+
+    /**
      * Start the Session
      *
      * @uses APP_SESSION_COOKIE_NAME
@@ -82,21 +89,38 @@ class Session
             'gc_maxlifetime' => Functions::constantInt('APP_SESSION_TTL'),
             'referer_check' => $_SERVER['HTTP_HOST'],
             'use_strict_mode' => true,
-            'read_and_close' => true,
         ]);
+
+        // Get Flash Storage
+        $flashStorage = [];
+        foreach (array_keys($_SESSION) as $key) {
+            if (strpos($key, self::$flashKey) === 0) {
+                $flashStorage[$key] = $_SESSION[$key];
+                $_SESSION[$key]  = null;
+                unset($_SESSION[$key]);
+            }
+        }
+
+        // Close Session Write
+        session_write_close();
+
+        // Add Flash Data back to Current Session Only.
+        foreach ($flashStorage as $key => $value) {
+            if ($key === self::$flashKey.self::$alertsKey && is_array($value)) {
+                foreach ($value as $alert) {
+                    if (is_object($alert) && isset($alert->type, $alert->message) && is_string($alert->type) && is_string($alert->message)) {
+                        self::$alerts[] = new Alert($alert->type, $alert->message);
+                    }
+                }
+            } else {
+                $_SESSION[str_replace(self::$flashKey, '', $key)] = $value;
+            }
+        }
 
         self::$id = session_id() ?: null;
 
         if (!empty($_SESSION[self::$userKey]) && is_object($_SESSION[self::$userKey])) {
             self::$user = $_SESSION[self::$userKey];
-        }
-
-        if (!empty($_SESSION[self::$alertsKey]) && is_array($_SESSION[self::$alertsKey])) {
-            foreach ($_SESSION[self::$alertsKey] as $alert) {
-                if (is_object($alert) && isset($alert->type, $alert->message) && is_string($alert->type) && is_string($alert->message)) {
-                    self::$alerts[] = new Alert($alert->type, $alert->message);
-                }
-            }
         }
 
         // Check to see if the Session is still active, but has expired.
@@ -121,20 +145,29 @@ class Session
             throw new Exception('SpryPHP: Key must not be empty when getting a Session value.');
         }
 
+        if (!in_array($key, [self::$alertsKey, self::$userKey])) {
+            $key = Functions::sanitizeString($key);
+        }
+
+        if (isset($_SESSION[self::$flashKey.$key])) {
+            return $_SESSION[self::$flashKey.$key];
+        }
+
         return $_SESSION[$key] ?? null;
     }
 
     /**
      * Set a Session value by key
      *
-     * @param string $key   Name of the Value to set.
-     * @param mixed  $value Value to set.
+     * @param string $key            Name of the Value to set.
+     * @param mixed  $value          Value to set.
+     * @param bool   $isFlashStorage Value to set.
      *
      * @throws Exception
      *
      * @return bool
      */
-    public static function set(string $key, mixed $value): bool
+    public static function set(string $key, mixed $value, bool $isFlashStorage = false): bool
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. Setting a Session value must be done before any other headers are sent.');
@@ -146,6 +179,16 @@ class Session
 
         if (empty($key)) {
             throw new Exception('SpryPHP: Key must not be empty when setting a Session value.');
+        }
+
+        if (!in_array($key, [self::$alertsKey, self::$userKey])) {
+            $key = Functions::sanitizeString($key);
+        }
+
+        if ($isFlashStorage) {
+            $_SESSION[$key] = null;
+            unset($_SESSION[$key]);
+            $key = self::$flashKey.$key;
         }
 
         session_start();
@@ -174,9 +217,15 @@ class Session
             throw new Exception('SpryPHP: Key must not be empty when deleting from Session.');
         }
 
+        if (!in_array($key, [self::$alertsKey, self::$userKey])) {
+            $key = Functions::sanitizeString($key);
+        }
+
         session_start();
         $_SESSION[$key] = null;
         unset($_SESSION[$key]);
+        $_SESSION[self::$flashKey.$key] = null;
+        unset($_SESSION[self::$flashKey.$key]);
         session_write_close();
 
         return !isset($_SESSION[$key]);
@@ -276,25 +325,7 @@ class Session
             self::$alerts[] = new Alert($type, $message);
         }
 
-        return self::set(self::$alertsKey, self::$alerts);
-    }
-
-    /**
-     * Clear All Alerts
-     *
-     * @throws Exception
-     *
-     * @return bool
-     */
-    public static function clearAlerts(): bool
-    {
-        if (headers_sent()) {
-            throw new Exception('SpryPHP: Headers Already Sent. Alerts must be cleared before any other headers have been sent.');
-        }
-
-        self::$alerts = [];
-
-        return self::set(self::$alertsKey, self::$alerts);
+        return self::set(self::$alertsKey, self::$alerts, true);
     }
 
     /**
