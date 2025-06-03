@@ -98,6 +98,13 @@ class Request
     private static object $params;
 
     /**
+     * Deferrables Callables
+     *
+     * @var array<int,callable> $deferrables
+     */
+    private static array $deferrables = [];
+
+    /**
      * Construct the Request.
      *
      * @uses APP_REQUEST_VERIFY_CSRF
@@ -350,5 +357,59 @@ class Request
     public static function getParams(): object
     {
         return self::$params;
+    }
+
+    /**
+     * Defer a method to run after output to the browser
+     *
+     * @param callable $function
+     *
+     * @return void
+     */
+    public static function defer(callable $function): void
+    {
+        self::$deferrables[] = $function;
+    }
+
+    /**
+     * Send and Close the Request.
+     *
+     * @return void
+     */
+    public static function send(): void
+    {
+        flush();
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request(); // required for PHP-FPM (PHP > 5.3.3)
+        }
+
+        self::close();
+    }
+
+    /**
+     * Close the Request.
+     *
+     * @return never
+     */
+    public static function close(): never
+    {
+        self::runDeferrables();
+        exit;
+    }
+
+    /**
+     * Run all Deferred callables
+     *
+     * @return void
+     */
+    private static function runDeferrables(): void
+    {
+        foreach (self::$deferrables as $deferrable) {
+            try {
+                $deferrable();
+            } catch (\Throwable $th) {
+                error_log('SpryPHP Error: '.$th->getMessage());
+            }
+        }
     }
 }

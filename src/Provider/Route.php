@@ -120,9 +120,9 @@ class Route
      * @param string              $path
      * @param array<string,mixed> $flashStorage Temporary Session Data for next page load.
      *
-     * @return never
+     * @return void
      */
-    public static function redirect(string $path, array $flashStorage = []): never
+    public static function redirect(string $path, array $flashStorage = []): void
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. redirect() must be called before any other headers are sent.');
@@ -133,7 +133,7 @@ class Route
         }
 
         header('Location: '.$path);
-        exit;
+        Request::send();
     }
 
     /**
@@ -162,16 +162,25 @@ class Route
                 $response = $callback();
             }
 
+            if (is_null($response)) {
+                return; // Continue Processing the Rest of the Request as the Response was specifically set to NULL.
+            }
+
+            // If is String then echo the contents and Close the connection.
             if (is_string($response)) {
                 echo $response;
+                Request::close();
             }
+
+            // If is Array then echo the JSON contents and Close the connection.
             if (is_array($response)) {
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode($response);
+                Request::close();
             }
-            if (!is_null($response)) {
-                exit;
-            }
+
+            // If Not null then send the output to the browser and close the connection.
+            Request::send();
         }
     }
 }
