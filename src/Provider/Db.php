@@ -260,6 +260,21 @@ class Db
     }
 
     /**
+     * See if table has at least one
+     *
+     * @param string                                         $table
+     * @param array<string,string|array<string,string>>|null $where
+     *
+     * @return bool|null
+     */
+    public static function has(string $table, ?array $where = []): ?bool
+    {
+        $result = self::count($table, $where);
+
+        return is_null($result) ? null : !empty($result);
+    }
+
+    /**
      * Select Sum
      *
      * @param string                                    $table
