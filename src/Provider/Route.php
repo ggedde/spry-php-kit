@@ -169,14 +169,12 @@ class Route
             // If is String then echo the contents and Close the connection.
             if (is_string($response)) {
                 echo $response;
-                Request::close();
             }
 
             // If is Array then echo the JSON contents and Close the connection.
             if (is_array($response)) {
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode($response);
-                Request::close();
             }
 
             // If Not null then send the output to the browser and close the connection.
