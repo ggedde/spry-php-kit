@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /**
- * This file is to handle The DB Item
+ * This file is to handle The DB Model
  */
 
 namespace SpryPhp\Model;
@@ -12,9 +12,9 @@ use SpryPhp\Provider\Db;
 use SpryPhp\Provider\Functions;
 
 /**
- * DB Item Instance
+ * DB Model Instance
  */
-class DbItem
+class DbModel
 {
     /**
      * Id

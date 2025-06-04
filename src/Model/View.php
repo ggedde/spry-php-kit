@@ -38,8 +38,8 @@ class View
      *
      * @return void
      */
-    public function render(): void
+    public function __invoke(): void
     {
-        throw new Exception('SpryPHP: Missing View File or No View Render Method Set.');
+        throw new Exception('SpryPHP: Missing View File or No View __invoke Method Set.');
     }
 }

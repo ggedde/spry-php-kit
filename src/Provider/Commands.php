@@ -290,13 +290,13 @@ class '.$controllerName.'
 
 namespace App\Model;'.(!empty($options->database) ? '
 
-use SpryPhp\Model\DbItem;
+use SpryPhp\Model\DbModel;
 ' : '
 ').'
 /**
  * '.$modelName.' Instance
  */
-class '.$modelName.(!empty($options->database) ? ' extends DbItem' : '').'
+class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
 {
 	/**
 	 * '.$modelName.' Name
