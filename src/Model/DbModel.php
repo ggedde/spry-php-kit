@@ -96,9 +96,9 @@ class DbModel
     /**
      * The DB Table
      *
-     * @var string $dbTable
+     * @var string DB_TABLE
      */
-    protected string $dbTable = '';
+    const DB_TABLE = '';
 
     /**
      * Construct the Obj
@@ -113,20 +113,29 @@ class DbModel
      */
     public function __construct(object|array|string|null $obj = null)
     {
+        // Allow assigning all Fields.
+        $fields = $this->getFields(false);
+
         // Try By ID
         if (is_string($obj) && !empty($obj)) {
+            // Allow assigning Only Public Fields.
+            $fields = $this->getFields();
+
             $objId = $obj;
-            $obj = Db::get($this->dbTable, ['*'], ['id' => $objId]);
+            $obj = Db::get(static::DB_TABLE, ['*'], ['id' => $objId]);
             if (empty($obj)) {
-                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in Table: %s', $objId, ucwords($this->dbTable)));
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item: (%s) in Table: %s', $objId, ucwords(static::DB_TABLE)));
             }
         }
 
         // Try Where Clause
         if (is_array($obj) && !empty($obj)) {
-            $obj = Db::get($this->dbTable, ['*'], $obj); // @phpstan-ignore argument.type
+            // Allow assigning Only Public Fields.
+            $fields = $this->getFields();
+
+            $obj = Db::get(static::DB_TABLE, ['*'], $obj); // @phpstan-ignore argument.type
             if (empty($obj)) {
-                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item in Table: %s', ucwords($this->dbTable)));
+                throw new Exception(sprintf('SpryPHP Database Error: Cannot find Item in Table: %s', ucwords(static::DB_TABLE)));
             }
         }
 
@@ -141,7 +150,7 @@ class DbModel
 
         foreach (array_keys((array) $obj) as $key) {
             $camelKey = Functions::formatCamelCase($key);
-            if (in_array($camelKey, $this->getFields(), true)) {
+            if (in_array($camelKey, $fields, true)) {
                 $this->$camelKey = is_string($obj->$key) ? Functions::escString($obj->$key) : (is_null($obj->$key) ? '' : $obj->$key);
             }
         }
@@ -176,7 +185,7 @@ class DbModel
     public function getColumns(): array
     {
         $columns = [];
-        $result = Db::query('SHOW COLUMNS FROM '.$this->dbTable);
+        $result = Db::query('SHOW COLUMNS FROM '.static::DB_TABLE);
         if ($result && !is_bool($result)) {
             while ($row = mysqli_fetch_array($result)) {
                 if (isset($row['Type']) && is_string($row['Type'])) {
@@ -225,7 +234,7 @@ class DbModel
      */
     public function getTable(): string
     {
-        return $this->dbTable;
+        return static::DB_TABLE;
     }
 
     /**
@@ -253,7 +262,7 @@ class DbModel
      */
     public function delete(): bool
     {
-        return Db::delete($this->dbTable, ['id' => $this->id]);
+        return Db::delete(static::DB_TABLE, ['id' => $this->id]);
     }
 
     /**
@@ -274,7 +283,7 @@ class DbModel
             }
         }
 
-        return Db::insert($this->dbTable, $dataSet);
+        return Db::insert(static::DB_TABLE, $dataSet);
     }
 
     /**
@@ -295,6 +304,6 @@ class DbModel
             }
         }
 
-        return Db::update($this->dbTable, $dataSet, ['id' => $this->id]);
+        return Db::update(static::DB_TABLE, $dataSet, ['id' => $this->id]);
     }
 }

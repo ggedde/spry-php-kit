@@ -175,7 +175,7 @@ namespace App\Controller;
  * '.$controllerName.' Controller
  */
 class '.$controllerName.'
-{'.($database ? '
+{'.($database && !$modelName ? '
     /**
 	 * Database Table
 	 *
@@ -197,14 +197,14 @@ class '.$controllerName.'
 	public static function get('.($database ? 'array $columns = [\'*\'], ' : '').'array $where = []'.($database ? ', array $order = [], array $limit = []' : '').'): '.($modelName ? $modelName : 'object').'|array
 	{
 		if (!empty($where[\'id\'])) {
-            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get(self::$dbTable, null, $where)' : '(object) [\'id\' => \'\']')).';
+            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get('.($modelName ? '(new '.$modelName.'())->getTable()' : 'self::$dbTable').', null, $where)' : '(object) [\'id\' => \'\']')).';
 			if ($item) {
 				return $item;
 			}
 		}
 
 		$items = [];'.($database ? '
-		foreach (Db::select(self::$dbTable, $columns, null, $where, [], $order, $limit) as $item) {
+		foreach (Db::select('.($modelName ? '(new '.$modelName.'())->getTable()' : 'self::$dbTable').', $columns, null, $where, [], $order, $limit) as $item) {
 			$items[] = '.($modelName ? 'new '.$modelName.'($item)' : '$item').';
 		}' : '').'
 
@@ -314,11 +314,11 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
 ' : '').'
 	/**
      * Construct the '.$modelName.'
-     '.(!empty($options->database) ? '* Either pass data as object or UUID.
+     '.(!empty($options->database) ? '* Either pass data as object or UUID. You can also pass a Where array.
      *' : '*').'
-     * @param object|string $obj - Data Object'.(!empty($options->database) ? ' or UUID as string' : '').'
+     * @param object|array<string,mixed>|string|null $obj - Data Object'.(!empty($options->database) ? ' or UUID as string or Where array' : '').'
      */
-    public function __construct(object|string $obj)
+    public function __construct(object|array|string|null $obj = null)
     {'.(!empty($options->database) ? '
         parent::__construct($obj);' : '
         // Do Something').'
@@ -415,7 +415,7 @@ class '.$viewBaseName.' extends View
     /**
      * Render the '.$viewBaseName.' View
      */
-    public function render(): void
+    public function __invoke(): void
     {
         ?>
             Hello World!
@@ -528,7 +528,7 @@ class '.$providerName.'
      */
     public static function func(): void
     {
-
+        // Do Something
     }
 }
 ';

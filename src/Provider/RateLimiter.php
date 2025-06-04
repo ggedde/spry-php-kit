@@ -216,7 +216,6 @@ class RateLimiter
      */
     public static function clearExpired(): bool
     {
-        sleep(10);
         $driver = Functions::constantString('APP_RATELIMIT_DRIVER');
 
         if (empty($driver) || !TypeRateLimitDriver::tryFrom($driver)) {
