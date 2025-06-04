@@ -462,7 +462,7 @@ class Functions
             throw new Exception(sprintf('SpryPHP: Constant (%s) is not defined', $constant));
         }
 
-        $value = defined($constant) ? (constant($constant) ?: $default) : $default;
+        $value = defined($constant) ? constant($constant) : $default;
 
         if (!is_string($value)) {
             throw new Exception(sprintf('SpryPHP: Constant (%s) Must be a String', $constant));
@@ -653,5 +653,25 @@ class Functions
             'WI' => 'Wisconsin',
             'WY' => 'Wyoming',
         );
+    }
+
+    /**
+     * Get Real IP
+     *
+     * @return string
+     */
+    public static function getIp()
+    {
+        foreach (array( 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' ) as $serverIp) {
+            if (!empty($_SERVER[$serverIp]) && is_string($_SERVER[$serverIp])) {
+                $ips = explode(',', $_SERVER[$serverIp]);
+                $ip  = trim(reset($ips));
+                if ($ip) {
+                    return $ip;
+                }
+            }
+        }
+
+        return !empty($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? trim($_SERVER['REMOTE_ADDR']) : '';
     }
 }

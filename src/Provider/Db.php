@@ -549,13 +549,14 @@ class Db
     /**
      * Check and Update Tables
      *
-     * @param string $schemaFile Path to Schema File. File must return a DB Scheme Array.
+     * @param string $schemaFile       Path to Schema File. File must return a DB Scheme Array.
+     * @param bool   $forceDestructive Allows for Destructive calls like drops or index changes, etc.
      *
      * @throws Exception
      *
      * @return string[]
      */
-    public static function updateSchema(string $schemaFile): array
+    public static function updateSchema(string $schemaFile, bool $forceDestructive = false): array
     {
         $changes = [];
 
@@ -590,19 +591,34 @@ class Db
             $result = self::query('SHOW COLUMNS FROM '.self::key($table));
             if ($result && !is_bool($result)) {
                 while ($row = mysqli_fetch_array($result)) {
-                    $existingColumns[] = self::buildColumn((object) [
-                        'name' => $row['Field'],
-                        'type' => $row['Type'],
-                        'null' => !empty($row['Null']) && is_string($row['Null']) && strtolower($row['Null']) === 'yes' ? true : false,
-                        'default' => $row['Default'],
-                        'index' => !empty($row['Key']) && in_array($row['Key'], ['MUL', 'PRI'], true) ? true : (!empty($row['Key']) && $row['Key'] === 'UNI' ? 'unique' : false),
-                    ]);
+                    if (!empty($row['Field']) && is_string($row['Field'])) {
+                        $existingColumns[] = self::buildColumn($row['Field'], (object) [
+                            'type' => $row['Type'],
+                            'null' => !empty($row['Null']) && is_string($row['Null']) && strtolower($row['Null']) === 'yes' ? true : false,
+                            'default' => $row['Default'],
+                            'index' => !empty($row['Key']) && in_array($row['Key'], ['MUL', 'PRI'], true) ? true : (!empty($row['Key']) && $row['Key'] === 'UNI' ? 'unique' : false),
+                        ]);
+                    }
+                }
+            }
+
+            foreach ($existingColumns as $existingColumn) {
+                if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && !in_array($existingColumn->name, array_keys($columns), true)) {
+                    $sql = 'ALTER TABLE '.self::key($table).' DROP COLUMN '.self::key($existingColumn->name);
+                    if (!$forceDestructive) {
+                        $changes[] = '* NOT PERFORMED (Needs Force Destructive): Altered Table ['.self::key($table).'] Dropped Column ['.self::key($existingColumn->name).']';
+                    } else {
+                        if (!self::query($sql)) {
+                            throw new Exception(sprintf('SpryPhp: Dropping Column (%s) failed: %s SQL: %s', $existingColumn->name, mysqli_connect_error(), $sql));
+                        }
+                        $changes[] = 'Altered Table ['.self::key($table).'] Dropped Column ['.self::key($existingColumn->name).']';
+                    }
                 }
             }
 
             $after = 'id';
-            foreach ($columns as $column) {
-                $column = self::buildColumn((object) $column);
+            foreach ($columns as $columnName => $column) {
+                $column = self::buildColumn($columnName, (object) $column);
                 if (!in_array($column->name, array_column($existingColumns, 'name'), true)) {
                     $sql = 'ALTER TABLE '.self::key($table).' ADD '.self::key($column->name).' '.$column->type.' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || is_int($column->default) || is_float($column->default) ? $column->default : '"'.$column->default.'"')).' AFTER '.$after;
                     if ($column->index) {
@@ -612,31 +628,34 @@ class Db
                         throw new Exception(sprintf('SpryPhp: Adding Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
                     }
                     $changes[] = 'Altered Table ['.self::key($table).'] Added Column ['.self::key($column->name).']'.($column->index ? ' With Index (index_'.self::key($column->name).')' : '');
-                    $existingColumns[] = self::buildColumn((object) $column);
+                    $existingColumns[] = self::buildColumn($columnName, (object) $column);
                 }
                 $after = self::key($column->name);
+
                 foreach ($existingColumns as $existingColumn) {
-                    if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && !in_array($existingColumn->name, array_column($columns, 'name'), true)) {
-                        $sql = 'ALTER TABLE '.self::key($table).' DROP COLUMN '.self::key($existingColumn->name);
-                        if (!self::query($sql)) {
-                            throw new Exception(sprintf('SpryPhp: Dropping Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
-                        }
-                        $changes[] = 'Altered Table ['.self::key($table).'] Dropped Column ['.self::key($column->name).']';
-                    } elseif ($column->name === $existingColumn->name) {
+                    if ($column->name === $existingColumn->name) {
                         if ((!empty($column->type) && !empty($existingColumn->type) && trim(strtolower($column->type)) !== trim(strtolower($existingColumn->type))) || (is_null($column->default) && !is_null($existingColumn->default)) || (!is_null($column->default) && is_null($existingColumn->default)) || (!empty($column->default) && !empty($existingColumn->default) && ((is_string($column->default) && trim(strtolower(strval($column->default))) !== trim(strtolower(strval($existingColumn->default)))) || (!is_string($column->default) && $column->default !== $existingColumn->default))) || $column->null !== $existingColumn->null) {
                             $sql = 'ALTER TABLE '.self::key($table).' MODIFY '.self::key($column->name).' '.strtoupper($column->type).' '.($column->null ? 'NULL' : 'NOT NULL').' DEFAULT '.(is_null($column->default) ? 'NULL' : (in_array($column->default, ['CURRENT_TIMESTAMP', 'NOW()'], true) || is_int($column->default) || is_float($column->default) ? $column->default : '"'.$column->default.'"'));
-                            if (!self::query($sql)) {
-                                throw new Exception(sprintf('SpryPhp: Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                            if (!$forceDestructive) {
+                                $changes[] = '* NOT PERFORMED (Needs Force Destructive): Altered Table ['.self::key($table).'] Modified Column ['.self::key($column->name).']';
+                            } else {
+                                if (!self::query($sql)) {
+                                    throw new Exception(sprintf('SpryPhp: Updating Column (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                }
+                                $changes[] = 'Altered Table ['.self::key($table).'] Modified Column ['.self::key($column->name).']';
                             }
-                            $changes[] = 'Altered Table ['.self::key($table).'] Modified Column ['.self::key($column->name).']';
                         }
                         if (!in_array($existingColumn->name, ['id', 'created_at', 'updated_at'], true) && isset($column->index) && isset($existingColumn->index) && $column->index !== $existingColumn->index) {
                             if ($existingColumn->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' DROP INDEX index_'.self::key($column->name);
-                                if (!self::query($sql)) {
-                                    throw new Exception(sprintf('SpryPhp: Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                if (!$forceDestructive) {
+                                    $changes[] = '* NOT PERFORMED (Needs Force Destructive): Altered Table ['.self::key($table).'] Dropped Index [index_'.self::key($column->name).']';
+                                } else {
+                                    if (!self::query($sql)) {
+                                        throw new Exception(sprintf('SpryPhp: Dropping Index (%s) failed: %s SQL: %s', $column->name, mysqli_connect_error(), $sql));
+                                    }
+                                    $changes[] = 'Altered Table ['.self::key($table).'] Dropped Index [index_'.self::key($column->name).']';
                                 }
-                                $changes[] = 'Altered Table ['.self::key($table).'] Dropped Index [index_'.self::key($column->name).']';
                             }
                             if ($column->index) {
                                 $sql = 'ALTER TABLE '.self::key($table).' '.self::getAddIndex($column);
@@ -657,21 +676,22 @@ class Db
     /**
      * Build Column
      *
+     * @param string $columnName
      * @param object $column
      *
      * @throws Exception
      *
      * @return object{name:string,type:string,default:string|int|float|null,null:boolean,index:string|array<string,string>|null}
      */
-    private static function buildColumn(object $column): object
+    private static function buildColumn(string $columnName, object $column): object
     {
-        if (!isset($column->name) || empty($column->name)) {
-            throw new Exception('SpryPhp: Column `name` is required in Schema File.');
+        if (!trim($columnName) || empty($columnName)) {
+            throw new Exception('SpryPhp: Column `name` is required in Schema File and must be a string.');
         }
 
         return (object) [
-            'name'    => isset($column->name) && is_string($column->name) ? trim($column->name) : '',
-            'type'    => isset($column->type) && is_string($column->type) ? trim($column->type) : 'VARCHAR(128)',
+            'name'    => trim($columnName),
+            'type'    => isset($column->type) && is_string($column->type) && trim(strtolower($column->type)) !== 'string' ? trim($column->type) : 'VARCHAR(128)',
             'default' => isset($column->default) ? (is_string($column->default) ? trim($column->default) : (is_scalar($column->default) && !is_bool($column->default) ? $column->default : null)) : null,
             'null'    => isset($column->null) ? boolval($column->null) : true,
             'index'   => isset($column->index) ? (is_string($column->index) ? strtolower(trim($column->index)) : (is_scalar($column->index) && is_array($column->index) ? $column->index : null)) : null,

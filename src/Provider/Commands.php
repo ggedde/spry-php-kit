@@ -46,6 +46,15 @@ class Commands
             $options->database = true;
         }
 
+        if (in_array('-f', array_map('strtolower', $argv), true) || in_array('--force', array_map('strtolower', $argv), true)) {
+            $options->force = true;
+        }
+
+        if ($command === 'updateDbSchema') {
+            self::updateDbSchema($options);
+            exit;
+        }
+
         self::$command($value, $options);
         exit;
     }
@@ -78,7 +87,7 @@ class Commands
 
         $argv = self::getArgs();
 
-        return isset($argv[1]) && !empty($commands[$argv[1]]) ? strtolower($commands[$argv[1]]) : null;
+        return isset($argv[1]) && !empty($commands[trim($argv[1])]) ? trim($commands[trim($argv[1])]) : null;
     }
 
     /**
@@ -531,17 +540,19 @@ class '.$providerName.'
     /**
      * Returns the Plural version of the string.
      *
+     * @param object $options Additional Options.
+     *
      * @throws Exception
      *
      * @return void
      */
-    private static function updateDbSchema(): void
+    private static function updateDbSchema(object $options): void
     {
         if (!defined('APP_PATH_DB_SCHEMA_FILE') || empty(Functions::constantString('APP_PATH_DB_SCHEMA_FILE'))) {
             throw new Exception("\n\e[91mSpryPhp: Constant APP_PATH_DB_SCHEMA_FILE does not exist.");
         }
 
-        $changes = Db::updateSchema(Functions::constantString('APP_PATH_DB_SCHEMA_FILE'));
+        $changes = Db::updateSchema(Functions::constantString('APP_PATH_DB_SCHEMA_FILE'), !empty($options->force));
         if ($changes) {
             echo "\n";
             foreach ($changes as $change) {
@@ -562,27 +573,29 @@ class '.$providerName.'
      */
     private static function showHelp(): void
     {
-        echo "\n\e[90mSpryPhp Commands:\n\n\t
+        echo "\nSpryPhp Commands:\n\n\t
     MAKE NEW CONTROLLER\n
-        c, controller [name] [options]\n\t
+        \e[1mc\e[0m, \e[1mcontroller\e[0m [name] [options]\n\t
         OPTIONS\n\t
-            -db, --database\n\n\t
+            \e[1m-db\e[0m, \e[1m--database\e[0m    With Database Methods\n\n\t
     MAKE NEW MODEL\n
-        m, model [name] [options]\n\t
+        \e[1mm\e[0m, \e[1mmodel\e[0m [name] [options]\n\t
         OPTIONS\n\t
-            -db, --database\n\n\t
+            \e[1m-db\e[0m, \e[1m--database\e[0m    With Database Methods\n\n\t
     MAKE NEW MODEL AND CONTROLLER\n
-        mc [name] [options]\n\t
+        \e[1mmc\e[0m [name] [options]\n\t
         OPTIONS\n\t
-            -db, --database\n\n\t
+            \e[1m-db\e[0m, \e[1m--database\e[0m    With Database Methods\n\n\t
     MAKE NEW VIEW\n
-        v, view [name]\n\n\t
+        \e[1mv\e[0m, \e[1mview\e[0m [name]\n\n\t
     MAKE NEW TYPE\n
-        t, type [name]\n\n\t
+        \e[1mt\e[0m, \e[1mtype\e[0m [name]\n\n\t
     MAKE NEW PROVIDER\n
-        p, provider [name]\n\n
+        \e[1mp\e[0m, \e[1mprovider\e[0m [name]\n\n
     UPDATE DB SCHEMA  -  !!! WARNING: Use at your own risk. Make sure to backup your database before you run this command, as it can be DESTRUCTIVE!\n
-        u, update\n\n
+        \e[1mu\e[0m, \e[1mupdate\e[0m\n\n
+        OPTIONS\n\t
+            \e[1m-f\e[0m, \e[1m--force\e[0m    Force Destructive Calls\n\n\t
     EXAMPLE USAGES:\n
         php spry controller Users
         php spry model User

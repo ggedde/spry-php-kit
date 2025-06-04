@@ -87,7 +87,7 @@ class Session
             'cookie_samesite' => defined('APP_SESSION_COOKIE_SAMESITE') ? Functions::constantString('APP_SESSION_COOKIE_SAMESITE') : 'Lax',
             'cookie_secure' => true,
             'gc_maxlifetime' => Functions::constantInt('APP_SESSION_TTL'),
-            'referer_check' => $_SERVER['HTTP_HOST'],
+            'referer_check' => Functions::constantString('APP_HOST'),
             'use_strict_mode' => true,
         ]);
 
@@ -364,7 +364,7 @@ class Session
         $cookieOptions = [
             'expires' => 0,
             'path' => defined('APP_URI') ? Functions::constantString('APP_URI') : '/',
-            'domain' => is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '',
+            'domain' => Functions::constantString('APP_HOST'),
             'secure' => true,
             'httponly' => Functions::constantBool('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY'),
             'samesite' => $samesite,
@@ -434,7 +434,7 @@ class Session
         $cookieOptions = [
             'expires' => time() - 1,
             'path' => $appUri,
-            'domain' => is_string($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '',
+            'domain' => Functions::constantString('APP_HOST'),
             'secure' => true,
             'httponly' => Functions::constantBool('APP_SESSION_LOGGED_IN_COOKIE_HTTP_ONLY'),
             'samesite' => $samesite,
