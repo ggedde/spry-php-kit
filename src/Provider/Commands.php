@@ -197,7 +197,7 @@ class '.$controllerName.'
 	public static function get('.($database ? 'array $columns = [\'*\'], ' : '').'array $where = []'.($database ? ', array $order = [], array $limit = []' : '').'): '.($modelName ? $modelName : 'object').'|array
 	{
 		if (!empty($where[\'id\'])) {
-            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get('.($modelName ? '(new '.$modelName.'())->getTable()' : 'self::$dbTable').', null, $where)' : '(object) [\'id\' => \'\']')).';
+            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get(self::$dbTable, null, $where)' : '(object) [\'id\' => \'\']')).';
 			if ($item) {
 				return $item;
 			}
