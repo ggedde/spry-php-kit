@@ -35,7 +35,6 @@ class Functions
         $data = ob_get_contents();
         ob_end_clean();
 
-
         if (is_string($data)) {
             $data = preg_replace('/]=>\n[\ ]*/', '] => ', $data);
         }
@@ -49,7 +48,7 @@ class Functions
             $data = preg_replace('/float\(([0-9\.]*)\)/', '{{float:}} $1', $data);
         }
         if (is_string($data)) {
-            $data = preg_replace('/string\(([0-9]*)\).*\"(.*)\"/', '{{str($1):}} $2', $data);
+            $data = preg_replace('/string\(([0-9]*)\) \"(.*)\"/', '{{str($1):}} $2', $data);
         }
         if (is_string($data)) {
             $data = preg_replace('/array\(([0-9]*)\).*\{/', '{{array($1):}} {', $data);

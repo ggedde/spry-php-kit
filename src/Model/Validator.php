@@ -5,8 +5,9 @@
 
 namespace SpryPhp\Model;
 
-use Exception;
 use SpryPhp\Provider\Functions;
+use Exception;
+use stdClass;
 
 /**
  * Class for Validator
@@ -770,12 +771,12 @@ class Validator
     /**
      * Param must match the Regex Expression and Requires Param to be a String
      *
-     * @param string      $regex
-     * @param string|null $customErrorMessage Custom Error Message
+     * @param string|string[]      $regex              Single Regex or Multiple
+     * @param string|string[]|null $customErrorMessage Custom Error Message - Single or Multiple that match the $regex array
      *
      * @return Validator
      */
-    public function matches(string $regex, ?string $customErrorMessage = null): Validator
+    public function matches(string|array $regex, string|array|null $customErrorMessage = null): Validator
     {
         $param = $this->param;
         if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
@@ -784,12 +785,20 @@ class Validator
 
         if (!is_null($this->requestedParams->$param)) {
             if (!is_string($this->requestedParams->$param)) {
-                $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be a string');
+                $this->addError($param, is_string($customErrorMessage) ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be a string');
 
                 return $this;
             }
-            if (!preg_match($regex, $this->requestedParams->$param)) {
-                $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must match the Regular Expression');
+            if (is_array($regex)) {
+                foreach ($regex as $index => $reg) {
+                    if (!is_string($this->requestedParams->$param) || !preg_match($reg, $this->requestedParams->$param)) {
+                        $this->addError($param, is_array($customErrorMessage) && isset($customErrorMessage[$index]) ? $customErrorMessage[$index] : (is_string($customErrorMessage) ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must match the Regular Expression'));
+                    }
+                }
+            } else {
+                if (!preg_match($regex, $this->requestedParams->$param)) {
+                    $this->addError($param, is_string($customErrorMessage) ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must match the Regular Expression');
+                }
             }
         }
 
@@ -1194,6 +1203,144 @@ class Validator
         }
 
         return $invalidParams ? (object) $invalidParams : null;
+    }
+
+    /**
+     * Returns Param as String
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return string
+     */
+    public function getString(?string $customErrorMessage = null): string
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return '';
+        }
+
+        if (!is_string($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be a String.');
+
+            return '';
+        }
+
+        return strval($this->requestedParams->$param);
+    }
+
+    /**
+     * Returns Param as Int
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return int
+     */
+    public function getInt(?string $customErrorMessage = null): int
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return 0;
+        }
+
+        if (!is_int($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be an Integer.');
+
+            return 0;
+        }
+
+        return intval($this->requestedParams->$param);
+    }
+
+    /**
+     * Returns Param as Float
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return float
+     */
+    public function getFloat(?string $customErrorMessage = null): float
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return 0;
+        }
+
+        if (!is_float($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be a Float.');
+
+            return 0;
+        }
+
+        return floatval($this->requestedParams->$param);
+    }
+
+    /**
+     * Returns Param as Array
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return array<int|string,mixed>
+     */
+    public function getArray(?string $customErrorMessage = null): array
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return [];
+        }
+
+        if (!is_array($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be an Array.');
+
+            return [];
+        }
+
+        return (array) $this->requestedParams->$param;
+    }
+
+    /**
+     * Returns Param as Object
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return object
+     */
+    public function getObject(?string $customErrorMessage = null): object
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return new stdClass();
+        }
+
+        if (!is_object($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be an Object.');
+
+            return new stdClass();
+        }
+
+        return (object) $this->requestedParams->$param;
+    }
+
+    /**
+     * Returns Param as Boolean
+     *
+     * @param string|null $customErrorMessage Custom Error Message
+     *
+     * @return bool
+     */
+    public function getBool(?string $customErrorMessage = null): bool
+    {
+        $param = $this->param;
+        if (!$this->stackErrors && in_array($param, $this->invalidParams, true)) {
+            return false;
+        }
+
+        if (!is_bool($this->requestedParams->$param)) {
+            $this->addError($param, $customErrorMessage ? $customErrorMessage : 'Parameter ('.$this->paramLabel.') must be an Boolean.');
+
+            return false;
+        }
+
+        return boolval($this->requestedParams->$param);
     }
 
     /**

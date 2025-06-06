@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 /**
- * This file is to handle TypeRateLimitDriver
+ * This file is to handle the Storage Type
  */
 
 namespace SpryPhp\Type;
 
 /**
- * TypeRateLimitDriver Type
+ * Storage Type
  */
-enum TypeRateLimitDriver: string
+enum TypeStorage: string
 {
     case Db   = 'db';
     case File = 'file';

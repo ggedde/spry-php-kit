@@ -374,9 +374,9 @@ class Request
     /**
      * Send and Close the Request.
      *
-     * @return void
+     * @return never
      */
-    public static function send(): void
+    public static function send(): never
     {
         flush();
         if (function_exists('fastcgi_finish_request')) {

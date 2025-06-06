@@ -25,11 +25,15 @@ class Commands
         $command = self::getCommand();
 
         if (!$command) {
-            throw new Exception("\n\e[91mSpryPhp: Missing Command. Try spryphp help");
+            self::showHelp();
+            self::printError('SpryPhp: Missing or Invalid Command. See `php spry help` above ^');
+            exit;
         }
 
         if (!method_exists(__CLASS__, $command)) {
-            throw new Exception("\n\e[91mSpryPhp: Command is not Valid. Try spryphp help");
+            self::showHelp();
+            self::printError('SpryPhp: Command is not Valid. See `php spry help` above ^');
+            exit;
         }
 
         if ($command === 'showHelp') {
@@ -38,7 +42,7 @@ class Commands
         }
 
         $argv = self::getArgs();
-        $value = isset($argv[2]) ? Functions::formatCamelCase($argv[2]) : null;
+        $value = isset($argv[2]) ? Functions::formatCamelCase($argv[2]) : '';
 
         $options = (object) [];
 
@@ -55,7 +59,11 @@ class Commands
             exit;
         }
 
-        self::$command($value, $options);
+        try {
+            self::$command($value, $options);
+        } catch (Exception $e) { // @phpstan-ignore catch.neverThrown
+            self::printError($e->getMessage());
+        }
         exit;
     }
 
@@ -81,6 +89,7 @@ class Commands
             't' => 'makeType',
             'update' => 'updateDbSchema',
             'u' => 'updateDbSchema',
+            'clear' => 'clear',
             'help' => 'showHelp',
             'h' => 'showHelp',
         ];
@@ -105,6 +114,35 @@ class Commands
         }
 
         return $argv;
+    }
+
+    /**
+     * Clear Data
+     *
+     * @param string $item Clear Data. One of  limits | cache.
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    private static function clear(string $item): void
+    {
+        $item = strtolower(trim($item));
+        if (!in_array($item, ['limits', 'cache'], true)) {
+            throw new Exception("SpryPhp: Incorrect `item` passed for clear command. Must be one of [ limits | cache ]");
+        }
+
+        if ($item === 'limits') {
+            if (RateLimiter::clearAll()) {
+                self::printSuccess('RateLimits Cleared Successfully!');
+            }
+        }
+
+        if ($item === 'cache') {
+            if (Cache::clearAll()) {
+                self::printSuccess('Cached Cleared Successfully!');
+            }
+        }
     }
 
     /**
@@ -140,7 +178,7 @@ class Commands
         $controllerName = ucwords(Functions::formatCamelCase(Functions::formatPlural($name)));
 
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
-            throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
+            throw new Exception("SpryPhp: Can't find App Directory");
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Controller')) {
@@ -148,11 +186,11 @@ class Commands
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Controller')) {
-            throw new Exception("\n\e[91mSpryPhp: Could Not Create Controller Directory");
+            throw new Exception("SpryPhp: Could Not Create Controller Directory");
         }
 
         if (file_exists(Functions::constantString('APP_PATH_APP').'/Controller/'.$controllerName.'.php')) {
-            throw new Exception("\n\e[91mSpryPhp: Controller already exists");
+            throw new Exception("SpryPhp: Controller already exists");
         }
 
         $database = !empty($options->database);
@@ -186,21 +224,18 @@ class '.$controllerName.'
 	/**
 	 * Get '.$controllerName.($database ? ' or single '.($modelName ? $modelName.' ' : '').'if WHERE has id.' : '').($database ? '
 	 *
-	 * @param array $columns' : '
+	 * @param string[]|null                                  $columns' : '
      *').'
-	 * @param array $where'.($database ? '
-	 * @param array $order
-	 * @param array $limit' : '').'
+	 * @param array<string,array<string,string>|string>|null $where'.($database ? '
+	 * @param array<string,string>|null                      $order
+	 * @param array<int,int|string>|int                      $limit' : '').'
 	 *
-	 * @return '.($modelName ? $modelName.'|'.$modelName.'[]' : 'array').'
+	 * @return '.($modelName ? $modelName.'|'.$modelName.'[]' : 'object|array|null').'
 	 */
-	public static function get('.($database ? 'array $columns = [\'*\'], ' : '').'array $where = []'.($database ? ', array $order = [], array $limit = []' : '').'): '.($modelName ? $modelName : 'object').'|array
+	public static function get('.($database ? '?array $columns = [\'*\'], ' : '').'?array $where = []'.($database ? ', ?array $order = [], array|int|null $limit = []' : '').'): '.($modelName ? $modelName : 'object').'|array
 	{
 		if (!empty($where[\'id\'])) {
-            $item = '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get(self::$dbTable, null, $where)' : '(object) [\'id\' => \'\']')).';
-			if ($item) {
-				return $item;
-			}
+            return '.($modelName ? 'new '.$modelName.'($where[\'id\'])' : ($database ? 'Db::get(self::$dbTable, null, $where)' : '(object) [\'id\' => \'\']')).';
 		}
 
 		$items = [];'.($database ? '
@@ -228,9 +263,7 @@ class '.$controllerName.'
 			\'name\' => $name,
 		]').';
 
-        $insert = '.($modelName ? '$item->insert()' : 'Db::insert(self::$dbTable, $item)').' ? true : null;
-
-		return $insert;
+		return '.($modelName ? '$item->insert()' : 'Db::insert(self::$dbTable, $item)').' ? $item : null;
 	}' : '').($database ? '
 
     /**
@@ -248,9 +281,8 @@ class '.$controllerName.'
 	}' : '').'
 }
 ';
-
         file_put_contents(Functions::constantString('APP_PATH_APP').'/Controller/'.$controllerName.'.php', $contents);
-        echo "\n\e[92mController Created Successfully!\n";
+        self::printSuccess('Controller Created Successfully!', $modelName ? false : true);
     }
 
     /**
@@ -268,7 +300,7 @@ class '.$controllerName.'
         $modelName = ucwords(Functions::formatCamelCase(Functions::formatSingular($name)));
 
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
-            throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
+            throw new Exception("SpryPhp: Can't find App Directory");
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Model')) {
@@ -276,11 +308,11 @@ class '.$controllerName.'
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Model')) {
-            throw new Exception("\n\e[91mSpryPhp: Could Not Create Model Directory");
+            throw new Exception("SpryPhp: Could Not Create Model Directory");
         }
 
         if (file_exists(Functions::constantString('APP_PATH_APP').'/Model/'.$modelName.'.php')) {
-            throw new Exception("\n\e[91mSpryPhp: Model already exists");
+            throw new Exception("SpryPhp: Model already exists");
         }
 
         $contents = '<?php declare(strict_types=1);
@@ -325,9 +357,8 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
     }
 }
 ';
-
         file_put_contents(Functions::constantString('APP_PATH_APP').'/Model/'.$modelName.'.php', $contents);
-        echo "\n\e[92mModel Created Successfully!\n";
+        self::printSuccess('Model Created Successfully!');
     }
 
     /**
@@ -342,8 +373,6 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
      */
     private static function makeView(string $name, object $options): void
     {
-
-
         $viewPathName = ucwords(Functions::formatCamelCase($name));
         $viewPathName = str_replace(' ', '/', ucwords(str_replace('/', ' ', $viewPathName)));
 
@@ -352,7 +381,7 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
         $viewParentName = trim(str_replace($viewBaseName, '', $viewPathName), '/');
 
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
-            throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
+            throw new Exception("SpryPhp: Can't find App Directory");
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/View')) {
@@ -360,7 +389,7 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/View')) {
-            throw new Exception("\n\e[91mSpryPhp: Could Not Create View Directory");
+            throw new Exception("SpryPhp: Could Not Create View Directory");
         }
 
         $paths = explode('/', $viewPathName);
@@ -374,14 +403,14 @@ class '.$modelName.(!empty($options->database) ? ' extends DbModel' : '').'
                     }
 
                     if (!is_dir(Functions::constantString('APP_PATH_APP').'/View'.$fullViewPath)) {
-                        throw new Exception("\n\e[91mSpryPhp: Could Not Create View Directory");
+                        throw new Exception("SpryPhp: Could Not Create View Directory");
                     }
                 }
             }
         }
 
         if (file_exists(Functions::constantString('APP_PATH_APP').'/View/'.$viewPathName.'.php')) {
-            throw new Exception("\n\e[91mSpryPhp: View already exists");
+            throw new Exception("SpryPhp: View already exists");
         }
 
         $contents = '<?php declare(strict_types=1);
@@ -423,9 +452,8 @@ class '.$viewBaseName.' extends View
     }
 }
 ';
-
         file_put_contents(Functions::constantString('APP_PATH_APP').'/View/'.$viewPathName.'.php', $contents);
-        echo "\n\e[92mView Created Successfully!\n";
+        self::printSuccess('View Created Successfully!');
     }
 
     /**
@@ -443,7 +471,7 @@ class '.$viewBaseName.' extends View
         $typeName = ucwords(Functions::formatCamelCase($name));
 
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
-            throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
+            throw new Exception("SpryPhp: Can't find App Directory");
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Type')) {
@@ -451,11 +479,11 @@ class '.$viewBaseName.' extends View
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Type')) {
-            throw new Exception("\n\e[91mSpryPhp: Could Not Create Type Directory");
+            throw new Exception("SpryPhp: Could Not Create Type Directory");
         }
 
         if (file_exists(Functions::constantString('APP_PATH_APP').'/Type/'.$typeName.'.php')) {
-            throw new Exception("\n\e[91mSpryPhp: Type already exists");
+            throw new Exception("SpryPhp: Type already exists");
         }
 
         $contents = '<?php declare(strict_types=1);
@@ -476,7 +504,7 @@ enum '.$typeName.': string
 ';
 
         file_put_contents(Functions::constantString('APP_PATH_APP').'/Type/'.$typeName.'.php', $contents);
-        echo "\n\e[92mType Created Successfully!\n";
+        self::printSuccess('Type Created Successfully!');
     }
 
     /**
@@ -494,7 +522,7 @@ enum '.$typeName.': string
         $providerName = ucwords(Functions::formatCamelCase($name));
 
         if (!is_dir(Functions::constantString('APP_PATH_APP'))) {
-            throw new Exception("\n\e[91mSpryPhp: Can't find App Directory");
+            throw new Exception("SpryPhp: Can't find App Directory");
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Provider')) {
@@ -502,11 +530,11 @@ enum '.$typeName.': string
         }
 
         if (!is_dir(Functions::constantString('APP_PATH_APP').'/Provider')) {
-            throw new Exception("\n\e[91mSpryPhp: Could Not Create Provider Directory");
+            throw new Exception("SpryPhp: Could Not Create Provider Directory");
         }
 
         if (file_exists(Functions::constantString('APP_PATH_APP').'/Provider/'.$providerName.'.php')) {
-            throw new Exception("\n\e[91mSpryPhp: Provider already exists");
+            throw new Exception("SpryPhp: Provider already exists");
         }
 
         $contents = '<?php declare(strict_types=1);
@@ -534,7 +562,7 @@ class '.$providerName.'
 ';
 
         file_put_contents(Functions::constantString('APP_PATH_APP').'/Provider/'.$providerName.'.php', $contents);
-        echo "\n\e[92mProvider Created Successfully!\n";
+        self::printSuccess('Provider Created Successfully!');
     }
 
     /**
@@ -549,7 +577,7 @@ class '.$providerName.'
     private static function updateDbSchema(object $options): void
     {
         if (!defined('APP_PATH_DB_SCHEMA_FILE') || empty(Functions::constantString('APP_PATH_DB_SCHEMA_FILE'))) {
-            throw new Exception("\n\e[91mSpryPhp: Constant APP_PATH_DB_SCHEMA_FILE does not exist.");
+            throw new Exception("SpryPhp: Constant APP_PATH_DB_SCHEMA_FILE does not exist.");
         }
 
         $changes = Db::updateSchema(Functions::constantString('APP_PATH_DB_SCHEMA_FILE'), !empty($options->force));
@@ -558,12 +586,10 @@ class '.$providerName.'
             foreach ($changes as $change) {
                 echo $change."\n";
             }
-            echo "\n\e[92mDatabase Schema Updated Successfully!\n";
-
-            return;
+            self::printSuccess('Database Schema Updated Successfully!');
         }
 
-        echo "\n\e[92mDatabase Schema is up to date!\n";
+        self::printSuccess('Database Schema is up to date!');
     }
 
     /**
@@ -596,10 +622,41 @@ class '.$providerName.'
         \e[1mu\e[0m, \e[1mupdate\e[0m\n\n
         OPTIONS\n\t
             \e[1m-f\e[0m, \e[1m--force\e[0m    Force Destructive Calls\n\n\t
+    CLEAR DATA\n
+        \e[1mclear\e[0m [item]\n\t
+        ITEMS\n\t
+            \e[1mlimits\e[0m    Clears Rate Limits\t
+            \e[1mcache\e[0m     Clears Cache\n\n\t
     EXAMPLE USAGES:\n
         php spry controller Users
         php spry model User
         php spry mc Users
-        php spry view User/AddUser\n\n";
+        php spry view User/AddUser
+        php spry clear limits\n\n";
+    }
+
+    /**
+     * Print Error
+     *
+     * @param string $errorMessage
+     *
+     * @return void
+     */
+    private static function printError(string $errorMessage): void
+    {
+        echo PHP_EOL."\e[91m".$errorMessage.PHP_EOL.PHP_EOL;
+    }
+
+    /**
+     * Print Success
+     *
+     * @param string $successMessage
+     * @param bool   $addPrefixEol
+     *
+     * @return void
+     */
+    private static function printSuccess(string $successMessage, bool $addPrefixEol = true): void
+    {
+        echo ($addPrefixEol ? PHP_EOL : '')."\e[92m".$successMessage.PHP_EOL.PHP_EOL;
     }
 }

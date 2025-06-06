@@ -120,9 +120,9 @@ class Route
      * @param string              $path
      * @param array<string,mixed> $flashStorage Temporary Session Data for next page load.
      *
-     * @return void
+     * @return never
      */
-    public static function redirect(string $path, array $flashStorage = []): void
+    public static function redirect(string $path, array $flashStorage = []): never
     {
         if (headers_sent()) {
             throw new Exception('SpryPHP: Headers Already Sent. redirect() must be called before any other headers are sent.');

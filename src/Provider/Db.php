@@ -300,16 +300,30 @@ class Db
 
 
     /**
-     * Delete all Entries
+     * Delete entries by WHERE Array
      *
      * @param string                                    $table
-     * @param array<string,string|array<string,string>> $where
+     * @param array<string,string|array<string,string>> $where Where Array
      *
      * @return bool
      */
     public static function delete(string $table, array $where): bool
     {
         $sql = "DELETE FROM ".self::key($table).self::where($where);
+
+        return self::query($sql) ? true : false;
+    }
+
+    /**
+     * Delete ALL Entries from a Table
+     *
+     * @param string $table
+     *
+     * @return bool
+     */
+    public static function truncate(string $table): bool
+    {
+        $sql = "TRUNCATE TABLE ".self::key($table);
 
         return self::query($sql) ? true : false;
     }
