@@ -93,12 +93,12 @@ class Functions
 
         if ($trace && defined('APP_DEBUG')) {
             echo "\n";
-            echo '<span style="color:#794111;">';
+            echo '<small style="color:#aa5b17;">';
             if (defined('APP_PATH')) {
                 $trace = str_replace(self::constantString('APP_PATH'), '', $trace);
             }
             echo $trace;
-            echo '</span>';
+            echo '</small>';
         }
         echo '</pre></div></div>';
     }
@@ -129,7 +129,7 @@ class Functions
 
         self::displayError(
             $value,
-            '<span style="color: #006499">in '.($traceArray[0]['file'] ?? 'Unknown').':'.($traceArray[0]['line'] ?? 'Unknown')."</span>\n\n".$trace
+            '<span style="color: #368ab7">in '.($traceArray[0]['file'] ?? 'Unknown').':'.($traceArray[0]['line'] ?? 'Unknown')."</span>\n\n".$trace
         );
     }
 
@@ -159,7 +159,7 @@ class Functions
 
         self::displayError(
             $value,
-            '<span style="color: #006499">in '.($traceArray[0]['file'] ?? 'Unknown').':'.($traceArray[0]['line'] ?? 'Unknown')."</span>\n\n".$trace
+            '<span style="color: #368ab7">in '.($traceArray[0]['file'] ?? 'Unknown').':'.($traceArray[0]['line'] ?? 'Unknown')."</span>\n\n".$trace
         );
         exit;
     }
@@ -174,7 +174,7 @@ class Functions
         set_exception_handler(function (\Throwable $exception) {
             self::displayError(
                 '<b>Uncaught Exception</b>: '.$exception->getMessage(),
-                '<span style="color: #006499">in '.$exception->getFile().':'.$exception->getLine()."</span>\n\n".$exception->getTraceAsString()
+                '<span style="color: #368ab7">in '.$exception->getFile().':'.$exception->getLine()."</span>\n\n".$exception->getTraceAsString()
             );
         });
     }
